@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios'
 import type { ApiError } from '@/types/api'
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000,
 })
 
