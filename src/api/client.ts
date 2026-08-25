@@ -1,0 +1,47 @@
+import axios, { AxiosError } from 'axios'
+import type { ApiError } from '@/types/api'
+
+const client = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+  timeout: 30000,
+})
+
+/** Attach the bearer token to every request. */
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+/** On 401 the session is gone — clear it and send the user back to login. */
+client.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiError>) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      if (window.location.pathname !== '/login') window.location.assign('/login')
+    }
+    return Promise.reject(error)
+  },
+)
+
+/**
+ * Turn any failure into something worth showing a person.
+ * The backend sends `message` as a string for thrown errors and as a
+ * string[] for ValidationPipe failures, so both are handled here.
+ */
+export function toMessage(error: unknown): string {
+  const err = error as AxiosError<ApiError>
+
+  if (err?.code === 'ECONNABORTED') return 'That took too long. Check the backend is running, then try again.'
+  if (err?.response) {
+    const body = err.response.data
+    if (Array.isArray(body?.message)) return body.message.join('. ')
+    if (typeof body?.message === 'string') return body.message
+    return `Request failed with status ${err.response.status}.`
+  }
+  if (err?.request) return 'Could not reach the server. Check the backend is running on port 4040.'
+  return 'Something went wrong. Try again.'
+}
+
+export default client
