@@ -6,21 +6,22 @@ const client = axios.create({
   timeout: 30000,
 })
 
-/** Attach the bearer token to every request. */
+let onUnauthorized: (() => void) | null = null
+
+export function setUnauthorizedHandler(fn: () => void) {
+  onUnauthorized = fn
+}
+
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-/** On 401 the session is gone — clear it and send the user back to login. */
 client.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiError>) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      if (window.location.pathname !== '/login') window.location.assign('/login')
-    }
+    if (error.response?.status === 401) onUnauthorized?.()
     return Promise.reject(error)
   },
 )

@@ -8,9 +8,20 @@ import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
 
 import App from './App.vue'
 import router from './router'
+import { setUnauthorizedHandler } from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
 
-createApp(App)
-  .use(createPinia())
-  .use(router)
-  .use(createBootstrap())
-  .mount('#app')
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+app.use(createBootstrap())
+
+const auth = useAuthStore()
+
+setUnauthorizedHandler(() => {
+  auth.logout()
+  router.push({ name: 'login', query: { next: router.currentRoute.value.fullPath } })
+})
+
+app.mount('#app')

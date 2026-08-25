@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/bots' },
@@ -11,10 +12,10 @@ const routes: RouteRecordRaw[] = [
 
 const router = createRouter({ history: createWebHistory(), routes })
 
-// Guard is wired in SUBTASK-2.1 once the auth store exists.
 router.beforeEach((to) => {
   if (to.meta.public) return true
-  return localStorage.getItem('token') ? true : { name: 'login', query: { next: to.fullPath } }
+  const auth = useAuthStore()
+  return auth.isAuthenticated ? true : { name: 'login', query: { next: to.fullPath } }
 })
 
 export default router
