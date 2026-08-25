@@ -1,0 +1,65 @@
+# ---- dependencies ----
+node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/install-state.gz
+
+# ---- build output ----
+dist/
+dist-ssr/
+build/
+*.local
+
+# ---- environment & secrets ----
+# never commit real keys. .env.example IS committed (see negation below).
+.env
+.env.*
+!.env.example
+
+# ---- vite / vue tooling caches ----
+.vite/
+node_modules/.vite/
+node_modules/.cache/
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+
+# ---- test & coverage ----
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ---- logs ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ---- editors ----
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ---- os ----
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- misc ----
+*.pem
+.eslintcache
+.stylelintcache
