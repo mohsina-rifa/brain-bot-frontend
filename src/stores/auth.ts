@@ -7,8 +7,8 @@ const TOKEN_KEY = "token";
 
 export interface AuthUser {
   id?: string;
-  email?: string;
   role?: string;
+  loginTime?: number;
 }
 
 function decodeToken(jwt: string): AuthUser | null {
@@ -17,9 +17,9 @@ function decodeToken(jwt: string): AuthUser | null {
     const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
     const claims = JSON.parse(json);
     return {
-      id: claims._id ?? claims.sub,
-      email: claims.email,
-      role: claims.role,
+      id: claims._id,
+      role: claims.roleId?.name,
+      loginTime: claims.loginTime,
     };
   } catch {
     return null;
