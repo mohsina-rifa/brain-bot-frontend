@@ -1,5 +1,5 @@
 import { computed, ref } from "vue";
-import client from "@/api/client";
+import client, { toMessage } from "@/api/client";
 import { useApi } from "@/composables/useApi";
 import type { Bot, ListQuery, Paginated } from "@/types/api";
 
@@ -30,6 +30,25 @@ export function useBots(limit = 10) {
     return load();
   }
 
+  const removing = ref<string | null>(null);
+  const removeError = ref<string | null>(null);
+
+  async function remove(id: string): Promise<boolean> {
+    removing.value = id;
+    removeError.value = null;
+    try {
+      await client.delete(`/bots/${id}`);
+      await load();
+      if (!bots.value.length && page.value > 1) await goTo(page.value - 1);
+      return true;
+    } catch (err) {
+      removeError.value = toMessage(err);
+      return false;
+    } finally {
+      removing.value = null;
+    }
+  }
+
   return {
     page,
     search,
@@ -42,5 +61,8 @@ export function useBots(limit = 10) {
     load,
     goTo,
     retry: request.retry,
+    remove,
+    removing,
+    removeError,
   };
 }

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { BButton, BAlert, BSpinner } from "bootstrap-vue-next";
 import { useBots } from "@/composables/useBots";
+import { useActiveBotStore } from "@/stores/activeBot";
 import CreateBotDialog from "@/components/CreateBotDialog.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import type { Bot } from "@/types/api";
 
 const {
   page,
@@ -15,9 +19,16 @@ const {
   load,
   goTo,
   retry,
+  remove,
+  removing,
+  removeError,
 } = useBots();
 
+const router = useRouter();
+const activeBot = useActiveBotStore();
+
 const showCreate = ref(false);
+const pendingDelete = ref<Bot | null>(null);
 
 onMounted(load);
 
@@ -25,6 +36,22 @@ function formatDate(iso: string) {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
     new Date(iso),
   );
+}
+
+function open(bot: Bot) {
+  activeBot.set(bot);
+  router.push(`/bots/${bot._id}/qna`);
+}
+
+async function confirmDelete() {
+  const bot = pendingDelete.value;
+  if (!bot) return;
+
+  const ok = await remove(bot._id);
+  if (!ok) return;
+
+  if (activeBot.bot?._id === bot._id) activeBot.clear();
+  pendingDelete.value = null;
 }
 </script>
 
@@ -41,6 +68,17 @@ function formatDate(iso: string) {
         <i class="bi bi-plus-lg me-1" />Create bot
       </BButton>
     </div>
+
+    <BAlert
+      v-if="removeError"
+      :model-value="true"
+      variant="danger"
+      dismissible
+      class="mb-3"
+      @closed="removeError = null"
+    >
+      {{ removeError }}
+    </BAlert>
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
@@ -80,18 +118,63 @@ function formatDate(iso: string) {
               <th scope="col">Name</th>
               <th scope="col">Status</th>
               <th scope="col">Created</th>
+              <th scope="col" class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="bot in bots" :key="bot._id">
               <td>
-                <span class="fw-semibold">{{ bot.name }}</span>
+                <button
+                  type="button"
+                  class="btn btn-link p-0 fw-semibold text-decoration-none"
+                  @click="open(bot)"
+                >
+                  <span
+                    class="d-inline-block rounded-circle me-2 align-middle"
+                    :style="{
+                      width: '.6rem',
+                      height: '.6rem',
+                      backgroundColor: bot.color,
+                    }"
+                  />
+                  {{ bot.name }}
+                </button>
                 <div class="small text-body-secondary">
                   {{ bot.description }}
                 </div>
               </td>
-              <td>{{ bot.status }}</td>
+              <td>
+                <span
+                  class="badge"
+                  :class="
+                    bot.status === 'active'
+                      ? 'text-bg-success'
+                      : 'text-bg-secondary'
+                  "
+                >
+                  {{ bot.status }}
+                </span>
+              </td>
               <td class="text-nowrap">{{ formatDate(bot.createdAt) }}</td>
+              <td class="text-end text-nowrap">
+                <BButton
+                  size="sm"
+                  variant="outline-secondary"
+                  @click="open(bot)"
+                >
+                  Open
+                </BButton>
+                <BButton
+                  size="sm"
+                  variant="outline-danger"
+                  class="ms-2"
+                  :disabled="removing === bot._id"
+                  @click="pendingDelete = bot"
+                >
+                  <BSpinner v-if="removing === bot._id" small />
+                  <span v-else>Delete</span>
+                </BButton>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -126,5 +209,22 @@ function formatDate(iso: string) {
     </div>
 
     <CreateBotDialog v-model="showCreate" @created="load" />
+
+    <ConfirmDialog
+      :model-value="pendingDelete !== null"
+      title="Delete bot"
+      confirm-label="Delete bot"
+      :busy="removing !== null"
+      @update:model-value="
+        (v: boolean) => {
+          if (!v) pendingDelete = null;
+        }
+      "
+      @confirm="confirmDelete"
+    >
+      Delete <strong>{{ pendingDelete?.name }}</strong
+      >? Its Q&amp;A content and conversations will no longer be reachable. This
+      cannot be undone.
+    </ConfirmDialog>
   </div>
 </template>
