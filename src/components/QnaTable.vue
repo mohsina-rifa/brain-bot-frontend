@@ -22,9 +22,9 @@ function formatDate(iso: string) {
 </script>
 
 <template>
-  <div class="table-responsive border rounded">
+  <div class="table-responsive border rounded qna-scroll">
     <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
+      <thead class="table-light qna-sticky-head">
         <tr>
           <th scope="col" style="width: 2.5rem">
             <span class="visually-hidden">Expand</span>
@@ -85,3 +85,17 @@ function formatDate(iso: string) {
     </table>
   </div>
 </template>
+
+<style scoped>
+.qna-scroll {
+  max-height: calc(100vh - 18rem);
+  overflow-y: auto;
+}
+
+.qna-sticky-head th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--bs-table-bg, var(--bs-tertiary-bg));
+}
+</style>
