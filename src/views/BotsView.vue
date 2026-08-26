@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { BButton, BAlert, BSpinner } from "bootstrap-vue-next";
 import { useBots } from "@/composables/useBots";
+import CreateBotDialog from "@/components/CreateBotDialog.vue";
 
 const {
   page,
@@ -15,6 +16,8 @@ const {
   goTo,
   retry,
 } = useBots();
+
+const showCreate = ref(false);
 
 onMounted(load);
 
@@ -34,6 +37,9 @@ function formatDate(iso: string) {
           {{ total }} {{ total === 1 ? "bot" : "bots" }}
         </p>
       </div>
+      <BButton variant="primary" @click="showCreate = true">
+        <i class="bi bi-plus-lg me-1" />Create bot
+      </BButton>
     </div>
 
     <!-- Loading -->
@@ -62,7 +68,7 @@ function formatDate(iso: string) {
       <p class="text-body-secondary mb-3">
         Create your first bot to start building a knowledge base.
       </p>
-      <BButton variant="primary" disabled>Create bot</BButton>
+      <BButton variant="primary" @click="showCreate = true">Create bot</BButton>
     </div>
 
     <!-- Table -->
@@ -118,5 +124,7 @@ function formatDate(iso: string) {
         </div>
       </div>
     </div>
+
+    <CreateBotDialog v-model="showCreate" @created="load" />
   </div>
 </template>

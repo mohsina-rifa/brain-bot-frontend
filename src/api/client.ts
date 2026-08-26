@@ -26,11 +26,6 @@ client.interceptors.response.use(
   },
 )
 
-/**
- * Turn any failure into something worth showing a person.
- * The backend sends `message` as a string for thrown errors and as a
- * string[] for ValidationPipe failures, so both are handled here.
- */
 export function toMessage(error: unknown): string {
   const err = error as AxiosError<ApiError>
 
@@ -38,6 +33,9 @@ export function toMessage(error: unknown): string {
   if (err?.response) {
     const body = err.response.data
     if (Array.isArray(body?.message)) return body.message.join('. ')
+    if (body?.message && typeof body.message === 'object') {
+      return Object.values(body.message).join('. ')
+    }
     if (typeof body?.message === 'string') return body.message
     return `Request failed with status ${err.response.status}.`
   }
