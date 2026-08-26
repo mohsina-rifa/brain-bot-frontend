@@ -41,12 +41,6 @@ function onLogout() {
         </RouterLink>
 
         <div class="d-flex align-items-center gap-3">
-          <span
-            v-if="auth.user?.role"
-            class="small text-body-secondary d-none d-sm-inline"
-          >
-            {{ auth.user.role }}
-          </span>
           <BButton variant="outline-secondary" size="sm" @click="onLogout">
             <i class="bi bi-box-arrow-right me-1" />Log out
           </BButton>
