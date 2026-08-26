@@ -1,15 +1,26 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useRoute, useRouter, RouterLink, RouterView } from "vue-router";
 import { BButton } from "bootstrap-vue-next";
 import { useAuthStore } from "@/stores/auth";
+import { useActiveBotStore } from "@/stores/activeBot";
 
 const auth = useAuthStore();
+const activeBot = useActiveBotStore();
 const router = useRouter();
 const route = useRoute();
 
 const botId = computed(() =>
   typeof route.params.id === "string" ? route.params.id : null,
+);
+
+watch(
+  botId,
+  (id) => {
+    if (id) activeBot.ensure(id);
+    else activeBot.clear();
+  },
+  { immediate: true },
 );
 
 function onLogout() {
@@ -58,8 +69,11 @@ function onLogout() {
 
         <template v-if="botId">
           <hr />
-          <div class="text-uppercase small text-body-secondary mb-2">
+          <div class="text-uppercase small text-body-secondary mb-1">
             Selected bot
+          </div>
+          <div class="small fw-semibold text-truncate mb-2">
+            {{ activeBot.bot?.name ?? "Loading…" }}
           </div>
           <ul class="nav nav-pills flex-column gap-1">
             <li class="nav-item">
