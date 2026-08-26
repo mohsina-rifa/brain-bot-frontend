@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, toRef, watch } from "vue";
-import { BButton, BAlert, BSpinner } from "bootstrap-vue-next";
+import { BButton, BAlert, BSpinner, BFormSelect } from "bootstrap-vue-next";
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
@@ -19,6 +19,7 @@ const {
   slow,
   load,
   goTo,
+  setLimit,
   retry,
 } = useQna(toRef(props, "id"));
 
@@ -34,8 +35,8 @@ watch(
 
 function rangeLabel() {
   if (!total.value) return "0 entries";
-  const first = (page.value - 1) * limit + 1;
-  const last = Math.min(page.value * limit, total.value);
+  const first = (page.value - 1) * limit.value + 1;
+  const last = Math.min(page.value * limit.value, total.value);
   return `${first}–${last} of ${total.value}`;
 }
 </script>
@@ -87,14 +88,27 @@ function rangeLabel() {
     <div v-else>
       <QnaTable :rows="rows" />
 
-      <div
-        v-if="pageCount > 1"
-        class="d-flex justify-content-between align-items-center mt-3"
-      >
-        <small class="text-body-secondary">
-          Page {{ page }} of {{ pageCount }}
-        </small>
-        <div class="d-flex gap-2">
+      <div class="d-flex justify-content-between align-items-center mt-3 gap-3">
+        <div class="d-flex align-items-center gap-2">
+          <label
+            for="qna-page-size"
+            class="form-label mb-0 small text-body-secondary"
+          >
+            Rows per page
+          </label>
+          <BFormSelect
+            id="qna-page-size"
+            :model-value="limit"
+            size="sm"
+            style="width: auto"
+            :options="[10, 25, 50]"
+            @update:model-value="(v: unknown) => setLimit(Number(v))"
+          />
+          <small v-if="pageCount > 1" class="text-body-secondary ms-2">
+            Page {{ page }} of {{ pageCount }}
+          </small>
+        </div>
+        <div v-if="pageCount > 1" class="d-flex gap-2">
           <BButton
             size="sm"
             variant="outline-secondary"
