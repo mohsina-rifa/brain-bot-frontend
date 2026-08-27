@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, toRef, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   BButton,
   BAlert,
@@ -48,9 +49,27 @@ const {
 
 const toast = useToast();
 
+const route = useRoute();
+const router = useRouter();
+
+const fromUrl = typeof route.query.q === "string" ? route.query.q : "";
+if (fromUrl) search.value = fromUrl;
+
 function onSearch(term: string) {
   setSearch(term);
+
+  router.replace({
+    query: { ...route.query, q: term || undefined },
+  });
 }
+
+watch(
+  () => route.query.q,
+  (next) => {
+    const term = typeof next === "string" ? next : "";
+    if (term !== search.value) setSearch(term);
+  },
+);
 
 onMounted(load);
 
@@ -175,7 +194,11 @@ async function confirmDelete() {
     </div>
 
     <div class="mb-3">
-      <QnaSearchBar :searching="loading && Boolean(search)" @search="onSearch" />
+      <QnaSearchBar
+        :initial="search"
+        :searching="loading && Boolean(search)"
+        @search="onSearch"
+      />
     </div>
 
     <div v-if="loading && !hasLoaded" class="text-center py-5">

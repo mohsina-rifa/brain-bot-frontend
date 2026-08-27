@@ -18,7 +18,7 @@ const text = ref(props.initial);
 watch(
   () => props.initial,
   (next) => {
-    if (next !== text.value) text.value = next;
+    if (next !== text.value.trim()) text.value = next;
   },
 );
 
