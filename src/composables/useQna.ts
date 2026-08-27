@@ -134,6 +134,27 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     }
   }
 
+  async function findDuplicate(
+    question: string,
+    excludeId?: string,
+  ): Promise<Qna | null> {
+    const text = question.trim().toLowerCase();
+    if (!text) return null;
+    try {
+      const res = await client.get<Paginated<Qna>>("/qna", {
+        params: { botId: botId.value, page: 1, limit: 200 },
+      });
+      return (
+        res.data.data.find(
+          (row) =>
+            row.id !== excludeId && row.question.trim().toLowerCase() === text,
+        ) ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+
   return {
     page,
     search,
@@ -151,6 +172,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     create,
     update,
     remove,
+    findDuplicate,
     saving,
     pendingId,
     mutationError,

@@ -163,8 +163,10 @@ function rangeLabel() {
       :busy="saving"
       :error="mutationError"
       :field-errors="fieldErrors"
+      :duplicate-question="duplicateOf?.question ?? null"
       @submit="onSubmit"
       @retry="onRetry"
+      @dismiss-duplicate="duplicateOf = null"
     />
 
     <ConfirmDialog

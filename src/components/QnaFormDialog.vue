@@ -21,10 +21,21 @@ const props = defineProps<{
 const emit = defineEmits<{
   submit: [question: string, answer: string];
   retry: [];
+  dismissDuplicate: [];
 }>();
 
 const question = ref("");
 const answer = ref("");
+
+const initial = ref({ question: "", answer: "" });
+
+const isDirty = computed(
+  () =>
+    question.value !== initial.value.question ||
+    answer.value !== initial.value.answer,
+);
+
+const confirmingDiscard = ref(false);
 
 watch(show, (open) => {
   if (!open) return;
@@ -44,7 +55,23 @@ function onSubmit() {
     :title="isEdit ? 'Edit Q&A entry' : 'Add Q&A entry'"
     :no-close-on-backdrop="busy"
     size="lg"
+    @hide="onHide"
   >
+    <BAlert
+      v-if="confirmingDiscard"
+      :model-value="true"
+      variant="warning"
+      class="mb-3 d-flex justify-content-between align-items-center gap-3"
+    >
+      <span>You have unsaved changes. Close without saving?</span>
+      <span class="d-flex gap-2 flex-shrink-0">
+        <BButton variant="outline-secondary" size="sm" @click="confirmingDiscard = false">
+          Keep editing
+        </BButton>
+        <BButton variant="warning" size="sm" @click="discardAndClose">Discard</BButton>
+      </span>
+    </BAlert>
+
     <BAlert
       v-if="error"
       :model-value="true"
@@ -61,6 +88,32 @@ function onSubmit() {
       >
         Retry
       </BButton>
+    </BAlert>
+
+    <BAlert
+      v-if="duplicateQuestion"
+      :model-value="true"
+      variant="warning"
+      class="mb-3"
+    >
+      <div class="fw-semibold mb-1">This question already exists</div>
+      <div class="small mb-2">
+        “{{ duplicateQuestion }}” is already in this knowledge base. Two close
+        matches make it harder for the bot to pick the right answer.
+      </div>
+      <div class="d-flex gap-2">
+        <BButton variant="warning" size="sm" :disabled="busy" @click="onSubmit">
+          Save anyway
+        </BButton>
+        <BButton
+          variant="outline-secondary"
+          size="sm"
+          :disabled="busy"
+          @click="emit('dismissDuplicate')"
+        >
+          Let me change it
+        </BButton>
+      </div>
     </BAlert>
 
     <BForm novalidate @submit.prevent="onSubmit">
@@ -104,7 +157,7 @@ function onSubmit() {
     </BForm>
 
     <template #footer>
-      <BButton variant="outline-secondary" :disabled="busy" @click="show = false">
+      <BButton variant="outline-secondary" :disabled="busy" @click="requestClose">
         Cancel
       </BButton>
       <BButton
