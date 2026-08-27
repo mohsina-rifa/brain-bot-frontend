@@ -41,6 +41,12 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     return load();
   }
 
+  function setSearch(term: string) {
+    search.value = term;
+    page.value = 1;
+    return load();
+  }
+
   function setLimit(next: number) {
     limit.value = next;
     page.value = 1;
@@ -168,6 +174,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     load,
     goTo,
     setLimit,
+    setSearch,
     retry: request.retry,
     create,
     update,

@@ -10,6 +10,7 @@ import {
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
+import QnaSearchBar from "@/components/QnaSearchBar.vue";
 import QnaFormDialog from "@/components/QnaFormDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import type { Qna } from "@/types/api";
@@ -29,6 +30,8 @@ const {
   load,
   goTo,
   setLimit,
+  setSearch,
+  search,
   retry,
   create,
   update,
@@ -43,6 +46,10 @@ const {
 } = useQna(toRef(props, "id"));
 
 const toast = useToast();
+
+function onSearch(term: string) {
+  setSearch(term);
+}
 
 onMounted(load);
 
@@ -164,6 +171,10 @@ async function confirmDelete() {
       <BButton variant="primary" @click="openCreate">
         <i class="bi bi-plus-lg me-1" />Add entry
       </BButton>
+    </div>
+
+    <div class="mb-3">
+      <QnaSearchBar :searching="loading && Boolean(search)" @search="onSearch" />
     </div>
 
     <!-- Loading -->
