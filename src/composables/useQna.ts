@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from "vue";
-import client from "@/api/client";
+import client, { toMessage } from "@/api/client";
 import { useApi } from "@/composables/useApi";
 import type { Paginated, Qna } from "@/types/api";
 
@@ -47,6 +47,31 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     return load();
   }
 
+  // --- mutations -----------------------------------------------------------
+
+  const pendingId = ref<string | null>(null);
+  const saving = ref(false);
+  const mutationError = ref<string | null>(null);
+
+  async function create(question: string, answer: string): Promise<Qna | null> {
+    saving.value = true;
+    mutationError.value = null;
+    try {
+      const res = await client.post<{ data: Qna }>("/qna", {
+        question,
+        answer,
+        botId: botId.value,
+      });
+      await load();
+      return res.data.data;
+    } catch (err) {
+      mutationError.value = toMessage(err);
+      return null;
+    } finally {
+      saving.value = false;
+    }
+  }
+
   return {
     page,
     search,
@@ -61,5 +86,9 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     goTo,
     setLimit,
     retry: request.retry,
+    create,
+    saving,
+    pendingId,
+    mutationError,
   };
 }

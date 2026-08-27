@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, toRef, watch } from "vue";
+import { onMounted, ref, toRef, watch } from "vue";
 import { BButton, BAlert, BSpinner, BFormSelect } from "bootstrap-vue-next";
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
+import QnaFormDialog from "@/components/QnaFormDialog.vue";
 
 const props = defineProps<{ id: string }>();
 
@@ -21,7 +22,17 @@ const {
   goTo,
   setLimit,
   retry,
+  create,
+  saving,
+  mutationError,
 } = useQna(toRef(props, "id"));
+
+const showCreate = ref(false);
+
+async function onCreate(question: string, answer: string) {
+  const created = await create(question, answer);
+  if (created) showCreate.value = false;
+}
 
 onMounted(load);
 
@@ -53,6 +64,9 @@ function rangeLabel() {
           <span v-else>{{ rangeLabel() }}</span>
         </p>
       </div>
+      <BButton variant="primary" @click="showCreate = true">
+        <i class="bi bi-plus-lg me-1" />Add entry
+      </BButton>
     </div>
 
     <!-- Loading -->
@@ -78,10 +92,11 @@ function rangeLabel() {
     <div v-else-if="!rows.length" class="text-center border rounded py-5 px-3">
       <i class="bi bi-chat-square-text fs-1 text-body-secondary d-block mb-2" />
       <p class="fw-semibold mb-1">No Q&amp;A entries yet</p>
-      <p class="text-body-secondary mb-0">
+      <p class="text-body-secondary mb-3">
         This bot has nothing to answer from. Add a question and answer to start
         building its knowledge base.
       </p>
+      <BButton variant="primary" @click="showCreate = true">Add entry</BButton>
     </div>
 
     <!-- Content -->
@@ -128,5 +143,12 @@ function rangeLabel() {
         </div>
       </div>
     </div>
+
+    <QnaFormDialog
+      v-model="showCreate"
+      :busy="saving"
+      :error="mutationError"
+      @submit="onCreate"
+    />
   </div>
 </template>
