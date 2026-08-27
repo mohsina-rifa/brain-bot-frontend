@@ -53,6 +53,12 @@ const welcome = computed<Message[]>(() => {
   const text = activeBot.bot?.welcomeMessage?.trim();
   return text ? [{ role: "bot", content: text }] : [];
 });
+
+const suggestion = computed(
+  () =>
+    activeBot.bot?.suggestionMessage?.trim() ||
+    "Ask anything this bot should be able to answer. Replies come from its Q&A content, so this is a real test of the knowledge base.",
+);
 </script>
 
 <template>
@@ -63,9 +69,23 @@ const welcome = computed<Message[]>(() => {
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div>
         <h1 class="h4 mb-1">Playground</h1>
-        <p class="text-body-secondary mb-0">
-          {{ activeBot.bot?.name ?? "Bot" }} · answers come from this bot's
-          knowledge base
+        <p class="text-body-secondary mb-0 d-flex align-items-center gap-2">
+          <span
+            v-if="activeBot.bot?.color"
+            class="rounded-circle flex-shrink-0 border"
+            style="width: 0.75rem; height: 0.75rem"
+            :style="{ background: activeBot.bot.color }"
+          />
+          <span>
+            {{ activeBot.bot?.name ?? "Bot" }} · answers come from this bot's
+            knowledge base
+          </span>
+          <span
+            v-if="activeBot.bot?.status === 'inactive'"
+            class="badge text-bg-secondary"
+          >
+            inactive
+          </span>
         </p>
       </div>
       <BButton
@@ -96,8 +116,7 @@ const welcome = computed<Message[]>(() => {
           class="text-body-secondary small mb-0"
           :class="welcome.length && 'mt-3'"
         >
-          Ask anything this bot should be able to answer. Replies come from its
-          Q&amp;A content, so this is a real test of the knowledge base.
+          {{ suggestion }}
         </p>
       </template>
       <MessageThread
@@ -139,8 +158,8 @@ const welcome = computed<Message[]>(() => {
       variant="primary"
       @confirm="confirmReset"
     >
-      Clear this thread and start a new conversation? The previous one is kept on
-      the server, but it will not be shown here again.
+      Clear this thread and start a new conversation? The previous one is kept
+      on the server, but it will not be shown here again.
     </ConfirmDialog>
   </div>
 </template>

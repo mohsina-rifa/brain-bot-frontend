@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { BButton, BSpinner } from "bootstrap-vue-next";
 import type { Message, QnaMatch } from "@/types/api";
 
-defineProps<{
+const props = defineProps<{
   messages: Message[];
   pending?: string | null;
   failed?: string | null;
@@ -12,6 +13,15 @@ defineProps<{
 }>();
 
 defineEmits<{ retry: [] }>();
+
+const botBubble = computed(() =>
+  props.accent
+    ? {
+        borderLeft: `3px solid ${props.accent}`,
+        background: `color-mix(in srgb, ${props.accent} 10%, transparent)`,
+      }
+    : undefined,
+);
 </script>
 
 <template>
@@ -34,13 +44,18 @@ defineEmits<{ retry: [] }>();
             ? 'text-bg-primary'
             : 'bg-body-tertiary border'
         "
-        :style="
-          message.role === 'bot' && accent
-            ? { borderLeft: `3px solid ${accent}` }
-            : undefined
-        "
+        :style="message.role === 'bot' ? botBubble : undefined"
       >
-        <div class="small fw-semibold mb-1 opacity-75">
+        <div
+          class="small fw-semibold mb-1 d-flex align-items-center gap-2"
+          :class="message.role === 'user' && 'opacity-75'"
+        >
+          <span
+            v-if="message.role === 'bot' && accent"
+            class="rounded-circle flex-shrink-0"
+            style="width: 0.5rem; height: 0.5rem"
+            :style="{ background: accent }"
+          />
           {{ message.role === "user" ? "You" : "Bot" }}
         </div>
         {{ message.content }}

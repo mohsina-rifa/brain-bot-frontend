@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   BForm,
   BFormGroup,
   BFormInput,
   BFormSelect,
   BFormTextarea,
+  BFormCheckbox,
   BButton,
   BAlert,
   BSpinner,
@@ -28,6 +29,11 @@ const name = ref("");
 const description = ref("");
 const color = ref("#000000");
 const status = ref<"active" | "inactive">("active");
+const welcomeMessage = ref("");
+const fallbackMessage = ref("");
+const suggestionMessage = ref("");
+const handoverToHuman = ref(false);
+const handOverToHumanMessage = ref("");
 
 watch(
   () => props.bot,
@@ -37,17 +43,37 @@ watch(
     description.value = bot.description ?? "";
     color.value = bot.color ?? "#000000";
     status.value = bot.status ?? "active";
+    welcomeMessage.value = bot.welcomeMessage ?? "";
+    fallbackMessage.value = bot.fallbackMessage ?? "";
+    suggestionMessage.value = bot.suggestionMessage ?? "";
+    handoverToHuman.value = bot.handoverToHuman ?? false;
+    handOverToHumanMessage.value = bot.handOverToHumanMessage ?? "";
   },
   { immediate: true },
 );
 
+const handoverMessageMissing = computed(
+  () => handoverToHuman.value && !handOverToHumanMessage.value.trim(),
+);
+
+const handoverMessageError = computed(() =>
+  handoverMessageMissing.value
+    ? "Required while hand over to a human is on."
+    : props.fieldErrors?.handOverToHumanMessage,
+);
+
 function onSubmit() {
-  if (props.busy) return;
+  if (props.busy || handoverMessageMissing.value) return;
   emit("save", {
     name: name.value.trim(),
     description: description.value.trim(),
     color: color.value,
     status: status.value,
+    welcomeMessage: welcomeMessage.value.trim(),
+    fallbackMessage: fallbackMessage.value.trim(),
+    suggestionMessage: suggestionMessage.value.trim(),
+    handoverToHuman: String(handoverToHuman.value),
+    handOverToHumanMessage: handOverToHumanMessage.value.trim(),
   });
 }
 </script>
@@ -71,6 +97,8 @@ function onSubmit() {
         Retry
       </BButton>
     </BAlert>
+
+    <h2 class="h6 text-body-secondary text-uppercase mb-3">Identity</h2>
 
     <BFormGroup
       label="Name"
@@ -143,7 +171,98 @@ function onSubmit() {
       </div>
     </div>
 
-    <BButton type="submit" variant="primary" :disabled="busy || !name.trim()">
+    <hr class="my-4" />
+
+    <h2 class="h6 text-body-secondary text-uppercase mb-3">Messages</h2>
+
+    <BFormGroup
+      label="Welcome message"
+      label-for="bot-welcome"
+      class="mb-3"
+      description="Greets the visitor when a conversation opens."
+      :state="fieldErrors?.welcomeMessage ? false : null"
+      :invalid-feedback="fieldErrors?.welcomeMessage"
+    >
+      <BFormTextarea
+        id="bot-welcome"
+        v-model="welcomeMessage"
+        rows="2"
+        max-rows="4"
+        :disabled="busy"
+        :state="fieldErrors?.welcomeMessage ? false : null"
+      />
+    </BFormGroup>
+
+    <BFormGroup
+      label="Fallback message"
+      label-for="bot-fallback"
+      class="mb-3"
+      description="Sent when the bot finds no confident answer."
+      :state="fieldErrors?.fallbackMessage ? false : null"
+      :invalid-feedback="fieldErrors?.fallbackMessage"
+    >
+      <BFormTextarea
+        id="bot-fallback"
+        v-model="fallbackMessage"
+        rows="2"
+        max-rows="4"
+        :disabled="busy"
+        :state="fieldErrors?.fallbackMessage ? false : null"
+      />
+    </BFormGroup>
+
+    <BFormGroup
+      label="Suggestion message"
+      label-for="bot-suggestion"
+      class="mb-4"
+      description="Nudges the visitor towards what to ask next."
+      :state="fieldErrors?.suggestionMessage ? false : null"
+      :invalid-feedback="fieldErrors?.suggestionMessage"
+    >
+      <BFormTextarea
+        id="bot-suggestion"
+        v-model="suggestionMessage"
+        rows="2"
+        max-rows="4"
+        :disabled="busy"
+        :state="fieldErrors?.suggestionMessage ? false : null"
+      />
+    </BFormGroup>
+
+    <BFormCheckbox
+      id="bot-handover"
+      v-model="handoverToHuman"
+      switch
+      class="mb-3"
+      :disabled="busy"
+    >
+      Hand over to a human when the bot cannot help
+    </BFormCheckbox>
+
+    <BFormGroup
+      v-if="handoverToHuman"
+      label="Hand-over message"
+      label-for="bot-handover-message"
+      class="mb-4"
+      description="Shown as the bot passes the conversation to a person."
+      :state="handoverMessageError ? false : null"
+      :invalid-feedback="handoverMessageError"
+    >
+      <BFormTextarea
+        id="bot-handover-message"
+        v-model="handOverToHumanMessage"
+        rows="2"
+        max-rows="4"
+        :disabled="busy"
+        :state="handoverMessageError ? false : null"
+      />
+    </BFormGroup>
+
+    <BButton
+      type="submit"
+      variant="primary"
+      :disabled="busy || !name.trim() || handoverMessageMissing"
+    >
       <BSpinner v-if="busy" small class="me-2" />
       {{ busy ? "Saving…" : "Save changes" }}
     </BButton>
