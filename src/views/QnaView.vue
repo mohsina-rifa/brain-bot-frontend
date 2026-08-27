@@ -253,6 +253,7 @@ async function confirmDelete() {
       >
       <QnaTable
         :rows="rows"
+        :highlight="search"
         :pending-id="pendingId"
         @edit="openEdit"
         @remove="(row: Qna) => (pendingDelete = row)"

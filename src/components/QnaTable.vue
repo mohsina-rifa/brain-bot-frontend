@@ -3,10 +3,35 @@ import { ref } from "vue";
 import { BButton, BSpinner } from "bootstrap-vue-next";
 import type { Qna } from "@/types/api";
 
-defineProps<{
+const props = defineProps<{
   rows: Qna[];
+  /** Id of the row currently mid-write, so only that row shows as pending. */
   pendingId?: string | null;
+  /** Active search term, so matches can be marked. Empty = no highlighting. */
+  highlight?: string;
 }>();
+
+/** Escape the term so a user typing `.` or `(` searches for that character. */
+function escapeRegExp(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Split text into matched and unmatched runs.
+ *
+ * Deliberately NOT v-html with <mark> injected: the text being highlighted is
+ * user content from the knowledge base, and building HTML out of it would be an
+ * XSS hole. Returning segments lets the template render ordinary text nodes.
+ */
+function segments(text: string): { text: string; match: boolean }[] {
+  const term = props.highlight?.trim();
+  if (!term) return [{ text, match: false }];
+  const lower = term.toLowerCase();
+  return text
+    .split(new RegExp(`(${escapeRegExp(term)})`, "ig"))
+    .filter((part) => part !== "")
+    .map((part) => ({ text: part, match: part.toLowerCase() === lower }));
+}
 
 defineEmits<{ edit: [row: Qna]; remove: [row: Qna] }>();
 
@@ -66,13 +91,23 @@ function formatDate(iso: string) {
                 />
               </button>
             </td>
-            <td class="fw-semibold">{{ row.question }}</td>
+            <td class="fw-semibold">
+              <template v-for="(seg, i) in segments(row.question)" :key="i"
+                ><mark v-if="seg.match" class="px-0">{{ seg.text }}</mark
+                ><template v-else>{{ seg.text }}</template></template
+              >
+            </td>
             <td
               class="text-body-secondary"
               :class="expanded.has(row.id) ? '' : 'text-truncate'"
               style="max-width: 1px"
             >
-              {{ expanded.has(row.id) ? "" : row.answer }}
+              <template v-if="!expanded.has(row.id)"
+                ><template v-for="(seg, i) in segments(row.answer)" :key="i"
+                  ><mark v-if="seg.match" class="px-0">{{ seg.text }}</mark
+                  ><template v-else>{{ seg.text }}</template></template
+                ></template
+              >
             </td>
             <td class="text-nowrap small text-body-secondary">
               {{ formatDate(row.updatedAt) }}
@@ -108,7 +143,10 @@ function formatDate(iso: string) {
             <td />
             <td colspan="4" class="pt-0">
               <p class="mb-0 text-body-secondary" style="white-space: pre-wrap">
-                {{ row.answer }}
+                <template v-for="(seg, i) in segments(row.answer)" :key="i"
+                  ><mark v-if="seg.match" class="px-0">{{ seg.text }}</mark
+                  ><template v-else>{{ seg.text }}</template></template
+                >
               </p>
             </td>
           </tr>
