@@ -16,6 +16,9 @@ const show = defineModel<boolean>({ default: false });
 const props = defineProps<{
   busy?: boolean;
   error?: string | null;
+  entry?: Qna | null;
+  fieldErrors?: Record<string, string>;
+  duplicateQuestion?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -26,6 +29,8 @@ const emit = defineEmits<{
 
 const question = ref("");
 const answer = ref("");
+
+const isEdit = computed(() => Boolean(props.entry));
 
 const initial = ref({ question: "", answer: "" });
 
@@ -39,9 +44,32 @@ const confirmingDiscard = ref(false);
 
 watch(show, (open) => {
   if (!open) return;
-  question.value = "";
-  answer.value = "";
+  question.value = props.entry?.question ?? "";
+  answer.value = props.entry?.answer ?? "";
+  initial.value = { question: question.value, answer: answer.value };
+  confirmingDiscard.value = false;
 });
+
+function onHide(event: { preventDefault: () => void }) {
+  if (!isDirty.value || props.busy) return;
+  event.preventDefault();
+  confirmingDiscard.value = true;
+}
+
+function discardAndClose() {
+  confirmingDiscard.value = false;
+  // Re-baseline so onHide does not immediately re-trigger on the way out.
+  initial.value = { question: question.value, answer: answer.value };
+  show.value = false;
+}
+
+function requestClose() {
+  if (isDirty.value) {
+    confirmingDiscard.value = true;
+    return;
+  }
+  show.value = false;
+}
 
 function onSubmit() {
   if (props.busy) return;

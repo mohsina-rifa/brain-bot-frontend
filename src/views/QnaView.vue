@@ -10,9 +10,9 @@ import {
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
-import type { Qna } from "@/types/api";
 import QnaFormDialog from "@/components/QnaFormDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import type { Qna } from "@/types/api";
 
 const props = defineProps<{ id: string }>();
 
@@ -31,16 +31,18 @@ const {
   setLimit,
   retry,
   create,
+  update,
+  remove,
+  findDuplicate,
   saving,
+  pendingId,
   mutationError,
+  fieldErrors,
+  retryMutation,
+  clearMutationError,
 } = useQna(toRef(props, "id"));
 
-const showCreate = ref(false);
-
-async function onCreate(question: string, answer: string) {
-  const created = await create(question, answer);
-  if (created) showCreate.value = false;
-}
+const toast = useToast();
 
 onMounted(load);
 
@@ -57,6 +59,93 @@ function rangeLabel() {
   const first = (page.value - 1) * limit.value + 1;
   const last = Math.min(page.value * limit.value, total.value);
   return `${first}–${last} of ${total.value}`;
+}
+
+// --- the form: one dialog, two modes ---------------------------------------
+
+const showForm = ref(false);
+
+const editing = ref<Qna | null>(null);
+
+const duplicateOf = ref<Qna | null>(null);
+
+function openCreate() {
+  editing.value = null;
+  duplicateOf.value = null;
+  clearMutationError();
+  showForm.value = true;
+}
+
+function openEdit(row: Qna) {
+  editing.value = row;
+  duplicateOf.value = null;
+  clearMutationError();
+  showForm.value = true;
+}
+
+function notifySaved(title: string) {
+  toast.create({ title, variant: "success", value: 3000, pos: "bottom-end" });
+}
+
+function notifyFailed(title: string) {
+  toast.create({
+    title,
+    body: mutationError.value ?? undefined,
+    variant: "danger",
+    value: 6000,
+    pos: "bottom-end",
+  });
+}
+
+async function onSubmit(question: string, answer: string) {
+  if (!duplicateOf.value) {
+    const match = await findDuplicate(question, editing.value?.id);
+    if (match) {
+      duplicateOf.value = match;
+      return;
+    }
+  }
+  duplicateOf.value = null;
+
+  const wasEdit = Boolean(editing.value);
+  const saved = editing.value
+    ? await update(editing.value.id, question, answer)
+    : await create(question, answer);
+
+  if (saved) {
+    showForm.value = false;
+    notifySaved(wasEdit ? "Entry updated" : "Entry added");
+  } else {
+    notifyFailed(wasEdit ? "Could not update entry" : "Could not add entry");
+  }
+}
+
+async function onRetry() {
+  const result = await retryMutation();
+  if (result === null || result === false) {
+    notifyFailed("Still could not save");
+    return;
+  }
+  showForm.value = false;
+  pendingDelete.value = null;
+  notifySaved("Saved");
+}
+
+// --- delete ----------------------------------------------------------------
+
+const pendingDelete = ref<Qna | null>(null);
+
+async function confirmDelete() {
+  const row = pendingDelete.value;
+  if (!row) return;
+  const ok = await remove(row.id);
+  
+  if (ok) {
+    pendingDelete.value = null;
+    notifySaved("Entry deleted");
+  } else {
+    notifyFailed("Could not delete entry");
+  }
 }
 </script>
 
