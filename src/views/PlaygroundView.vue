@@ -5,6 +5,7 @@ import { useConversation } from "@/composables/useConversation";
 import { useActiveBotStore } from "@/stores/activeBot";
 import MessageThread from "@/components/MessageThread.vue";
 import MessageComposer from "@/components/MessageComposer.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import type { Message } from "@/types/api";
 
 const props = defineProps<{ id: string }>();
@@ -32,6 +33,21 @@ watch([() => messages.value.length, pending, failed, sending], async () => {
   if (el) el.scrollTop = el.scrollHeight;
 });
 
+const confirmingReset = ref(false);
+
+function requestReset() {
+  if (!messages.length && !failed && !pending) {
+    reset();
+    return;
+  }
+  confirmingReset.value = true;
+}
+
+function confirmReset() {
+  reset();
+  confirmingReset.value = false;
+}
+
 const welcome = computed<Message[]>(() => {
   const text = activeBot.bot?.welcomeMessage?.trim();
   return text ? [{ role: "bot", content: text }] : [];
@@ -54,7 +70,7 @@ const welcome = computed<Message[]>(() => {
       <BButton
         variant="outline-secondary"
         :disabled="!started || sending"
-        @click="reset"
+        @click="requestReset"
       >
         <i class="bi bi-arrow-counterclockwise me-1" />Reset
       </BButton>
@@ -113,5 +129,16 @@ const welcome = computed<Message[]>(() => {
     </BAlert>
 
     <MessageComposer :busy="sending" @send="send" />
+
+    <ConfirmDialog
+      v-model="confirmingReset"
+      title="Reset conversation"
+      confirm-label="Start fresh"
+      variant="primary"
+      @confirm="confirmReset"
+    >
+      Clear this thread and start a new conversation? The previous one is kept on
+      the server, but it will not be shown here again.
+    </ConfirmDialog>
   </div>
 </template>
