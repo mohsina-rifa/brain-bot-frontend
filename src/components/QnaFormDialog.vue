@@ -18,7 +18,10 @@ const props = defineProps<{
   error?: string | null;
 }>();
 
-const emit = defineEmits<{ submit: [question: string, answer: string] }>();
+const emit = defineEmits<{
+  submit: [question: string, answer: string];
+  retry: [];
+}>();
 
 const question = ref("");
 const answer = ref("");
@@ -42,12 +45,32 @@ function onSubmit() {
     :no-close-on-backdrop="busy"
     size="lg"
   >
-    <BAlert v-if="error" :model-value="true" variant="danger" class="mb-3">
-      {{ error }}
+    <BAlert
+      v-if="error"
+      :model-value="true"
+      variant="danger"
+      class="mb-3 d-flex justify-content-between align-items-center gap-3"
+    >
+      <span>{{ error }}</span>
+      <BButton
+        variant="outline-danger"
+        size="sm"
+        class="flex-shrink-0"
+        :disabled="busy"
+        @click="emit('retry')"
+      >
+        Retry
+      </BButton>
     </BAlert>
 
     <BForm novalidate @submit.prevent="onSubmit">
-      <BFormGroup label="Question" label-for="qna-question" class="mb-3">
+      <BFormGroup
+        label="Question"
+        label-for="qna-question"
+        class="mb-3"
+        :state="fieldErrors?.question ? false : null"
+        :invalid-feedback="fieldErrors?.question"
+      >
         <BFormTextarea
           id="qna-question"
           v-model="question"
@@ -56,6 +79,7 @@ function onSubmit() {
           required
           placeholder="What are your support hours?"
           :disabled="busy"
+          :state="fieldErrors?.question ? false : null"
         />
       </BFormGroup>
 
@@ -63,6 +87,8 @@ function onSubmit() {
         label="Answer"
         label-for="qna-answer"
         description="This is what the bot will reply with when the question matches."
+        :state="fieldErrors?.answer ? false : null"
+        :invalid-feedback="fieldErrors?.answer"
       >
         <BFormTextarea
           id="qna-answer"
@@ -72,6 +98,7 @@ function onSubmit() {
           required
           placeholder="Our support team is available 9 AM to 6 PM, Sunday through Thursday."
           :disabled="busy"
+          :state="fieldErrors?.answer ? false : null"
         />
       </BFormGroup>
     </BForm>
@@ -82,7 +109,7 @@ function onSubmit() {
       </BButton>
       <BButton
         variant="primary"
-        :disabled="busy || !question.trim() || !answer.trim()"
+        :disabled="busy || !question || !answer"
         @click="onSubmit"
       >
         <BSpinner v-if="busy" small class="me-2" />

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref, toRef, watch } from "vue";
-import { BButton, BAlert, BSpinner, BFormSelect } from "bootstrap-vue-next";
+import {
+  BButton,
+  BAlert,
+  BSpinner,
+  BFormSelect,
+  useToast,
+} from "bootstrap-vue-next";
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
@@ -156,7 +162,9 @@ function rangeLabel() {
       :entry="editing"
       :busy="saving"
       :error="mutationError"
+      :field-errors="fieldErrors"
       @submit="onSubmit"
+      @retry="onRetry"
     />
 
     <ConfirmDialog

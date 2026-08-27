@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
 import { useRoute, useRouter, RouterLink, RouterView } from "vue-router";
-import { BButton } from "bootstrap-vue-next";
+import { BButton, BOrchestrator } from "bootstrap-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import { useActiveBotStore } from "@/stores/activeBot";
 
@@ -105,5 +105,7 @@ function onLogout() {
         <RouterView />
       </main>
     </div>
+
+    <BOrchestrator />
   </div>
 </template>

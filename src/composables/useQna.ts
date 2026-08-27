@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from "vue";
-import client, { toMessage } from "@/api/client";
+import client, { toFieldErrors, toMessage } from "@/api/client";
 import { useApi } from "@/composables/useApi";
 import type { Paginated, Qna } from "@/types/api";
 
@@ -53,6 +53,28 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   const saving = ref(false);
   const mutationError = ref<string | null>(null);
 
+  const fieldErrors = ref<Record<string, string>>({});
+
+  let lastFailed: (() => Promise<unknown>) | null = null;
+
+  const canRetry = computed(() => mutationError.value !== null);
+
+  function retryMutation() {
+    return lastFailed ? lastFailed() : Promise.resolve(null);
+  }
+
+  function clearMutationError() {
+    mutationError.value = null;
+    fieldErrors.value = {};
+    lastFailed = null;
+  }
+
+  function recordFailure(err: unknown, retry: () => Promise<unknown>) {
+    mutationError.value = toMessage(err);
+    fieldErrors.value = toFieldErrors(err);
+    lastFailed = retry;
+  }
+
   async function create(question: string, answer: string): Promise<Qna | null> {
     saving.value = true;
     mutationError.value = null;
@@ -79,7 +101,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   ): Promise<Qna | null> {
     saving.value = true;
     pendingId.value = id;
-    mutationError.value = null;
+    clearMutationError();
     try {
       const res = await client.put<{ data: Qna }>(`/qna/${id}`, {
         question,
@@ -88,7 +110,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       await load();
       return res.data.data;
     } catch (err) {
-      mutationError.value = toMessage(err);
+      recordFailure(err, () => update(id, question, answer));
       return null;
     } finally {
       saving.value = false;
@@ -98,14 +120,14 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
 
   async function remove(id: string): Promise<boolean> {
     pendingId.value = id;
-    mutationError.value = null;
+    clearMutationError();
     try {
       await client.delete(`/qna/${id}`);
       await load();
       if (!rows.value.length && page.value > 1) await goTo(page.value - 1);
       return true;
     } catch (err) {
-      mutationError.value = toMessage(err);
+      recordFailure(err, () => remove(id));
       return false;
     } finally {
       pendingId.value = null;
@@ -132,5 +154,9 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     saving,
     pendingId,
     mutationError,
+    fieldErrors,
+    canRetry,
+    retryMutation,
+    clearMutationError,
   };
 }

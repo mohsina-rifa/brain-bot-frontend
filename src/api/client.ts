@@ -26,6 +26,13 @@ client.interceptors.response.use(
   },
 )
 
+export function toFieldErrors(error: unknown): Record<string, string> {
+  const body = (error as AxiosError<ApiError>)?.response?.data
+  const message = body?.message
+  if (!message || typeof message !== 'object' || Array.isArray(message)) return {}
+  return message as Record<string, string>
+}
+
 export function toMessage(error: unknown): string {
   const err = error as AxiosError<ApiError>
 
