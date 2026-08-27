@@ -6,6 +6,7 @@ import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
 import type { Qna } from "@/types/api";
 import QnaFormDialog from "@/components/QnaFormDialog.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const props = defineProps<{ id: string }>();
 
@@ -102,7 +103,12 @@ function rangeLabel() {
 
     <!-- Content -->
     <div v-else>
-      <QnaTable :rows="rows" @edit="openEdit" />
+      <QnaTable
+        :rows="rows"
+        :pending-id="pendingId"
+        @edit="openEdit"
+        @remove="(row: Qna) => (pendingDelete = row)"
+      />
 
       <div class="d-flex justify-content-between align-items-center mt-3 gap-3">
         <div class="d-flex align-items-center gap-2">
@@ -152,5 +158,17 @@ function rangeLabel() {
       :error="mutationError"
       @submit="onSubmit"
     />
+
+    <ConfirmDialog
+      :model-value="pendingDelete !== null"
+      title="Delete entry"
+      confirm-label="Delete entry"
+      :busy="pendingId !== null"
+      @update:model-value="(v: boolean) => { if (!v) pendingDelete = null }"
+      @confirm="confirmDelete"
+    >
+      Delete <strong>{{ pendingDelete?.question }}</strong
+      >? The bot will no longer be able to answer from it. This cannot be undone.
+    </ConfirmDialog>
   </div>
 </template>

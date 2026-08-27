@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { BButton } from "bootstrap-vue-next";
+import { BButton, BSpinner } from "bootstrap-vue-next";
 import type { Qna } from "@/types/api";
 
-defineProps<{ rows: Qna[] }>();
+defineProps<{
+  rows: Qna[];
+  pendingId?: string | null;
+}>();
 
-defineEmits<{ edit: [row: Qna] }>();
+defineEmits<{ edit: [row: Qna]; remove: [row: Qna] }>();
 
 const expanded = ref<Set<string>>(new Set());
 
@@ -40,7 +43,7 @@ function formatDate(iso: string) {
       </thead>
       <tbody>
         <template v-for="row in rows" :key="row.id">
-          <tr>
+          <tr :class="{ 'opacity-50': pendingId === row.id }">
             <td>
               <button
                 type="button"
@@ -75,13 +78,29 @@ function formatDate(iso: string) {
               {{ formatDate(row.updatedAt) }}
             </td>
             <td class="text-end text-nowrap">
-              <BButton
-                size="sm"
-                variant="outline-secondary"
-                @click="$emit('edit', row)"
-              >
-                Edit
-              </BButton>
+              <template v-if="pendingId === row.id">
+                <BSpinner small />
+                <span class="small text-body-secondary ms-2">Saving…</span>
+              </template>
+              <template v-else>
+                <BButton
+                  size="sm"
+                  variant="outline-secondary"
+                  :disabled="Boolean(pendingId)"
+                  @click="$emit('edit', row)"
+                >
+                  Edit
+                </BButton>
+                <BButton
+                  size="sm"
+                  variant="outline-danger"
+                  class="ms-2"
+                  :disabled="Boolean(pendingId)"
+                  @click="$emit('remove', row)"
+                >
+                  Delete
+                </BButton>
+              </template>
             </td>
           </tr>
 

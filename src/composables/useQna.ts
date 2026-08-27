@@ -96,6 +96,22 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     }
   }
 
+  async function remove(id: string): Promise<boolean> {
+    pendingId.value = id;
+    mutationError.value = null;
+    try {
+      await client.delete(`/qna/${id}`);
+      await load();
+      if (!rows.value.length && page.value > 1) await goTo(page.value - 1);
+      return true;
+    } catch (err) {
+      mutationError.value = toMessage(err);
+      return false;
+    } finally {
+      pendingId.value = null;
+    }
+  }
+
   return {
     page,
     search,
@@ -112,6 +128,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     retry: request.retry,
     create,
     update,
+    remove,
     saving,
     pendingId,
     mutationError,
