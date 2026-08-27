@@ -7,6 +7,10 @@ export const useActiveBotStore = defineStore("activeBot", () => {
   const bot = ref<Bot | null>(null);
   const loading = ref(false);
 
+  function replace(next: Bot) {
+    if (bot.value?._id === next._id) bot.value = next;
+  }
+
   function set(next: Bot) {
     bot.value = next;
   }
@@ -31,5 +35,5 @@ export const useActiveBotStore = defineStore("activeBot", () => {
     }
   }
 
-  return { bot, loading, set, clear, ensure };
+  return { bot, loading, set, replace, clear, ensure };
 });
