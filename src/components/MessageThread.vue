@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { BButton, BSpinner } from "bootstrap-vue-next";
-import type { Message } from "@/types/api";
+import type { Message, QnaMatch } from "@/types/api";
 
 defineProps<{
   messages: Message[];
   pending?: string | null;
   failed?: string | null;
   thinking?: boolean;
+  matches?: QnaMatch[];
   accent?: string;
 }>();
 
@@ -43,6 +44,29 @@ defineEmits<{ retry: [] }>();
           {{ message.role === "user" ? "You" : "Bot" }}
         </div>
         {{ message.content }}
+
+        <details
+          v-if="
+            message.role === 'bot' &&
+            i === messages.length - 1 &&
+            matches &&
+            matches.length
+          "
+          class="mt-2 pt-2 border-top small"
+        >
+          <summary class="text-body-secondary" style="cursor: pointer">
+            Matched {{ matches.length }}
+            {{ matches.length === 1 ? "entry" : "entries" }}
+          </summary>
+          <ul class="list-unstyled mb-0 mt-2 d-flex flex-column gap-1">
+            <li v-for="m in matches" :key="m.id" class="d-flex gap-2">
+              <span class="badge text-bg-secondary flex-shrink-0">
+                {{ (m.cosine_similarity * 100).toFixed(0) }}%
+              </span>
+              <span class="text-body-secondary">{{ m.question }}</span>
+            </li>
+          </ul>
+        </details>
       </div>
     </div>
 

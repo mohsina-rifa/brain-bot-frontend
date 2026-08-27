@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from "vue";
 import client, { toMessage } from "@/api/client";
-import type { Conversation, Message } from "@/types/api";
+import type { Conversation, Message, QnaMatch } from "@/types/api";
 
 export function useConversation(botId: Ref<string>) {
   const conversation = ref<Conversation | null>(null);
@@ -10,6 +10,31 @@ export function useConversation(botId: Ref<string>) {
   const failed = ref<string | null>(null);
 
   const pending = ref<string | null>(null);
+
+  const matches = ref<QnaMatch[]>([]);
+
+  async function loadMatches(question: string, conversationId?: string) {
+    try {
+      const res = await client.post<{ data: QnaMatch[] }>(
+        "/qna/search/best-by-question",
+        { question, botId: botId.value, limit: 3 },
+      );
+      matches.value = res.data.data ?? [];
+
+      // Nothing matched, so the bot fell back. Record the question as an
+      // unresolved query the operator can turn into new Q&A content later.
+      if (!matches.value.length && conversationId) {
+        await client.post("/unresolved-queries", {
+          botId: botId.value,
+          conversationId,
+          query: question,
+          status: "pending",
+        });
+      }
+    } catch {
+      matches.value = [];
+    }
+  }
 
   const messages = computed<Message[]>(() => conversation.value?.messages ?? []);
   const started = computed(() => conversation.value !== null);
@@ -22,6 +47,7 @@ export function useConversation(botId: Ref<string>) {
     error.value = null;
     failed.value = null;
     pending.value = text;
+    matches.value = [];
 
     try {
       const res = await client.post<{ data: Conversation }>("/conversations", {
@@ -31,6 +57,7 @@ export function useConversation(botId: Ref<string>) {
       });
       conversation.value = res.data.data;
       pending.value = null;
+      void loadMatches(text, conversation.value?._id);
       return true;
     } catch (err) {
       error.value = toMessage(err);
@@ -51,6 +78,7 @@ export function useConversation(botId: Ref<string>) {
     error.value = null;
     failed.value = null;
     pending.value = null;
+    matches.value = [];
   }
 
   return {
@@ -61,6 +89,7 @@ export function useConversation(botId: Ref<string>) {
     error,
     failed,
     pending,
+    matches,
     send,
     retry,
     reset,

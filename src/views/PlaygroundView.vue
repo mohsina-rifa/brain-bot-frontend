@@ -18,6 +18,7 @@ const {
   error,
   failed,
   pending,
+  matches,
   send,
   retry,
   reset,
@@ -106,6 +107,7 @@ const welcome = computed<Message[]>(() => {
         :pending="pending"
         :failed="failed"
         :thinking="sending"
+        :matches="matches"
         @retry="retry"
       />
     </div>
