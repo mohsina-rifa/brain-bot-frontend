@@ -9,6 +9,8 @@ export function useConversation(botId: Ref<string>) {
 
   const failed = ref<string | null>(null);
 
+  const pending = ref<string | null>(null);
+
   const messages = computed<Message[]>(() => conversation.value?.messages ?? []);
   const started = computed(() => conversation.value !== null);
 
@@ -19,6 +21,7 @@ export function useConversation(botId: Ref<string>) {
     sending.value = true;
     error.value = null;
     failed.value = null;
+    pending.value = text;
 
     try {
       const res = await client.post<{ data: Conversation }>("/conversations", {
@@ -27,10 +30,12 @@ export function useConversation(botId: Ref<string>) {
         message: { role: "user", content: text },
       });
       conversation.value = res.data.data;
+      pending.value = null;
       return true;
     } catch (err) {
       error.value = toMessage(err);
       failed.value = text;
+      pending.value = null;
       return false;
     } finally {
       sending.value = false;
@@ -45,6 +50,7 @@ export function useConversation(botId: Ref<string>) {
     conversation.value = null;
     error.value = null;
     failed.value = null;
+    pending.value = null;
   }
 
   return {
@@ -54,6 +60,7 @@ export function useConversation(botId: Ref<string>) {
     sending,
     error,
     failed,
+    pending,
     send,
     retry,
     reset,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from "vue";
+import { computed, nextTick, ref, toRef, watch } from "vue";
 import { BAlert, BButton } from "bootstrap-vue-next";
 import { useConversation } from "@/composables/useConversation";
 import { useActiveBotStore } from "@/stores/activeBot";
@@ -10,10 +10,27 @@ import type { Message } from "@/types/api";
 const props = defineProps<{ id: string }>();
 
 const activeBot = useActiveBotStore();
-const { messages, started, sending, error, send, retry, reset } =
-  useConversation(toRef(props, "id"));
+const {
+  messages,
+  started,
+  sending,
+  error,
+  failed,
+  pending,
+  send,
+  retry,
+  reset,
+} = useConversation(toRef(props, "id"));
 
 watch(() => props.id, reset);
+
+const panel = ref<HTMLElement | null>(null);
+
+watch([() => messages.value.length, pending, failed, sending], async () => {
+  await nextTick();
+  const el = panel.value;
+  if (el) el.scrollTop = el.scrollHeight;
+});
 
 const welcome = computed<Message[]>(() => {
   const text = activeBot.bot?.welcomeMessage?.trim();
@@ -43,8 +60,16 @@ const welcome = computed<Message[]>(() => {
       </BButton>
     </div>
 
-    <div class="border rounded p-3 mb-3" style="min-height: 24rem">
-      <template v-if="!messages.length">
+    <div
+      ref="panel"
+      class="border rounded p-3 mb-3"
+      style="
+        min-height: 24rem;
+        max-height: calc(100vh - 22rem);
+        overflow-y: auto;
+      "
+    >
+      <template v-if="!messages.length && !pending && !failed">
         <MessageThread
           v-if="welcome.length"
           :messages="welcome"
@@ -62,6 +87,10 @@ const welcome = computed<Message[]>(() => {
         v-else
         :messages="messages"
         :accent="activeBot.bot?.color"
+        :pending="pending"
+        :failed="failed"
+        :thinking="sending"
+        @retry="retry"
       />
     </div>
 

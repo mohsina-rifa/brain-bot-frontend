@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { BButton, BSpinner } from "bootstrap-vue-next";
 import type { Message } from "@/types/api";
 
 defineProps<{
   messages: Message[];
+  pending?: string | null;
+  failed?: string | null;
+  thinking?: boolean;
   accent?: string;
 }>();
+
+defineEmits<{ retry: [] }>();
 </script>
 
 <template>
@@ -13,12 +19,20 @@ defineProps<{
       v-for="(message, i) in messages"
       :key="i"
       class="d-flex"
-      :class="message.role === 'user' ? 'justify-content-end' : 'justify-content-start'"
+      :class="
+        message.role === 'user'
+          ? 'justify-content-end'
+          : 'justify-content-start'
+      "
     >
       <div
         class="px-3 py-2 rounded-3 shadow-sm"
         style="max-width: min(42rem, 80%); white-space: pre-wrap"
-        :class="message.role === 'user' ? 'text-bg-primary' : 'bg-body-tertiary border'"
+        :class="
+          message.role === 'user'
+            ? 'text-bg-primary'
+            : 'bg-body-tertiary border'
+        "
         :style="
           message.role === 'bot' && accent
             ? { borderLeft: `3px solid ${accent}` }
@@ -29,6 +43,40 @@ defineProps<{
           {{ message.role === "user" ? "You" : "Bot" }}
         </div>
         {{ message.content }}
+      </div>
+    </div>
+
+    <div v-if="pending" class="d-flex justify-content-end">
+      <div
+        class="px-3 py-2 rounded-3 shadow-sm text-bg-primary opacity-75"
+        style="max-width: min(42rem, 80%); white-space: pre-wrap"
+      >
+        <div class="small fw-semibold mb-1 opacity-75">You</div>
+        {{ pending }}
+      </div>
+    </div>
+
+    <div v-if="failed" class="d-flex justify-content-end">
+      <div
+        class="px-3 py-2 rounded-3 border border-danger"
+        style="max-width: min(42rem, 80%); white-space: pre-wrap"
+      >
+        <div class="small fw-semibold mb-1 text-danger">Not sent</div>
+        {{ failed }}
+        <div class="mt-2">
+          <BButton size="sm" variant="outline-danger" @click="$emit('retry')">
+            Retry
+          </BButton>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="thinking" class="d-flex justify-content-start">
+      <div
+        class="px-3 py-2 rounded-3 bg-body-tertiary border d-flex align-items-center gap-2"
+      >
+        <BSpinner small />
+        <span class="small text-body-secondary">Bot is thinking…</span>
       </div>
     </div>
   </div>
