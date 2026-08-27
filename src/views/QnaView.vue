@@ -21,6 +21,7 @@ const activeBot = useActiveBotStore();
 const {
   page,
   rows,
+  hasLoaded,
   total,
   limit,
   pageCount,
@@ -163,7 +164,7 @@ async function confirmDelete() {
         <h1 class="h4 mb-1">Q&amp;A content</h1>
         <p class="text-body-secondary mb-0">
           {{ activeBot.bot?.name ?? "Knowledge base" }} ·
-          <span v-if="loading">loading…</span>
+          <span v-if="loading && !hasLoaded">loading…</span>
           <span v-else-if="error">unavailable</span>
           <span v-else>{{ rangeLabel() }}</span>
         </p>
@@ -177,8 +178,7 @@ async function confirmDelete() {
       <QnaSearchBar :searching="loading && Boolean(search)" @search="onSearch" />
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="text-center py-5">
+    <div v-if="loading && !hasLoaded" class="text-center py-5">
       <BSpinner />
       <p v-if="slow" class="text-body-secondary small mt-3 mb-0">
         Still working — the server is taking longer than usual.
@@ -196,7 +196,21 @@ async function confirmDelete() {
       <BButton variant="outline-danger" size="sm" @click="retry">Retry</BButton>
     </BAlert>
 
-    <!-- Empty -->
+    <div
+      v-else-if="!rows.length && search"
+      class="text-center border rounded py-5 px-3"
+    >
+      <i class="bi bi-search fs-1 text-body-secondary d-block mb-2" />
+      <p class="fw-semibold mb-1">No entries match “{{ search }}”</p>
+      <p class="text-body-secondary mb-3">
+        This bot has {{ hasLoaded ? "other" : "" }} entries, just none containing
+        that text. Try a different word, or clear the search.
+      </p>
+      <BButton variant="outline-secondary" @click="onSearch('')">
+        Clear search
+      </BButton>
+    </div>
+
     <div v-else-if="!rows.length" class="text-center border rounded py-5 px-3">
       <i class="bi bi-chat-square-text fs-1 text-body-secondary d-block mb-2" />
       <p class="fw-semibold mb-1">No Q&amp;A entries yet</p>
@@ -209,12 +223,18 @@ async function confirmDelete() {
 
     <!-- Content -->
     <div v-else>
+      <div
+        :class="{ 'opacity-50': loading }"
+        :aria-busy="loading"
+        style="transition: opacity 120ms ease"
+      >
       <QnaTable
         :rows="rows"
         :pending-id="pendingId"
         @edit="openEdit"
         @remove="(row: Qna) => (pendingDelete = row)"
       />
+      </div>
 
       <div class="d-flex justify-content-between align-items-center mt-3 gap-3">
         <div class="d-flex align-items-center gap-2">

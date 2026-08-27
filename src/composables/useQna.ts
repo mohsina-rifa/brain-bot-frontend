@@ -22,6 +22,8 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   );
 
   const rows = computed(() => request.data.value?.data ?? []);
+
+  const hasLoaded = computed(() => request.data.value !== null);
   const total = computed(() => request.data.value?.total ?? 0);
   const pageCount = computed(() =>
     Math.max(1, Math.ceil(total.value / limit.value)),
@@ -165,6 +167,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     page,
     search,
     rows,
+    hasLoaded,
     total,
     limit,
     pageCount,
