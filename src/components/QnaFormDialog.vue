@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   BModal,
   BForm,
@@ -9,6 +9,7 @@ import {
   BAlert,
   BSpinner,
 } from "bootstrap-vue-next";
+import type { Qna } from "@/types/api";
 
 const show = defineModel<boolean>({ default: false });
 
@@ -37,7 +38,7 @@ function onSubmit() {
 <template>
   <BModal
     v-model="show"
-    title="Add Q&amp;A entry"
+    :title="isEdit ? 'Edit Q&A entry' : 'Add Q&A entry'"
     :no-close-on-backdrop="busy"
     size="lg"
   >
@@ -85,7 +86,7 @@ function onSubmit() {
         @click="onSubmit"
       >
         <BSpinner v-if="busy" small class="me-2" />
-        {{ busy ? "Saving…" : "Add entry" }}
+        {{ busy ? "Saving…" : isEdit ? "Save changes" : "Add entry" }}
       </BButton>
     </template>
   </BModal>

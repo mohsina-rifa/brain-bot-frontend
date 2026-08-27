@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { BButton } from "bootstrap-vue-next";
 import type { Qna } from "@/types/api";
 
 defineProps<{ rows: Qna[] }>();
+
+defineEmits<{ edit: [row: Qna] }>();
 
 const expanded = ref<Set<string>>(new Set());
 
@@ -32,6 +35,7 @@ function formatDate(iso: string) {
           <th scope="col" style="width: 32%">Question</th>
           <th scope="col">Answer</th>
           <th scope="col" class="text-nowrap">Updated</th>
+          <th scope="col" class="text-end">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -70,11 +74,20 @@ function formatDate(iso: string) {
             <td class="text-nowrap small text-body-secondary">
               {{ formatDate(row.updatedAt) }}
             </td>
+            <td class="text-end text-nowrap">
+              <BButton
+                size="sm"
+                variant="outline-secondary"
+                @click="$emit('edit', row)"
+              >
+                Edit
+              </BButton>
+            </td>
           </tr>
 
           <tr v-if="expanded.has(row.id)" class="table-light">
             <td />
-            <td colspan="3" class="pt-0">
+            <td colspan="4" class="pt-0">
               <p class="mb-0 text-body-secondary" style="white-space: pre-wrap">
                 {{ row.answer }}
               </p>

@@ -4,6 +4,7 @@ import { BButton, BAlert, BSpinner, BFormSelect } from "bootstrap-vue-next";
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
+import type { Qna } from "@/types/api";
 import QnaFormDialog from "@/components/QnaFormDialog.vue";
 
 const props = defineProps<{ id: string }>();
@@ -64,7 +65,7 @@ function rangeLabel() {
           <span v-else>{{ rangeLabel() }}</span>
         </p>
       </div>
-      <BButton variant="primary" @click="showCreate = true">
+      <BButton variant="primary" @click="openCreate">
         <i class="bi bi-plus-lg me-1" />Add entry
       </BButton>
     </div>
@@ -96,12 +97,12 @@ function rangeLabel() {
         This bot has nothing to answer from. Add a question and answer to start
         building its knowledge base.
       </p>
-      <BButton variant="primary" @click="showCreate = true">Add entry</BButton>
+      <BButton variant="primary" @click="openCreate">Add entry</BButton>
     </div>
 
     <!-- Content -->
     <div v-else>
-      <QnaTable :rows="rows" />
+      <QnaTable :rows="rows" @edit="openEdit" />
 
       <div class="d-flex justify-content-between align-items-center mt-3 gap-3">
         <div class="d-flex align-items-center gap-2">
@@ -145,10 +146,11 @@ function rangeLabel() {
     </div>
 
     <QnaFormDialog
-      v-model="showCreate"
+      v-model="showForm"
+      :entry="editing"
       :busy="saving"
       :error="mutationError"
-      @submit="onCreate"
+      @submit="onSubmit"
     />
   </div>
 </template>

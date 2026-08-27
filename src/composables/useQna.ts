@@ -72,6 +72,30 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     }
   }
 
+  async function update(
+    id: string,
+    question: string,
+    answer: string,
+  ): Promise<Qna | null> {
+    saving.value = true;
+    pendingId.value = id;
+    mutationError.value = null;
+    try {
+      const res = await client.put<{ data: Qna }>(`/qna/${id}`, {
+        question,
+        answer,
+      });
+      await load();
+      return res.data.data;
+    } catch (err) {
+      mutationError.value = toMessage(err);
+      return null;
+    } finally {
+      saving.value = false;
+      pendingId.value = null;
+    }
+  }
+
   return {
     page,
     search,
@@ -87,6 +111,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     setLimit,
     retry: request.retry,
     create,
+    update,
     saving,
     pendingId,
     mutationError,
