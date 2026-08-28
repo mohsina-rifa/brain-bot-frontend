@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter, RouterLink, RouterView } from "vue-router";
-import { BButton, BOrchestrator } from "bootstrap-vue-next";
+import { BButton, BOffcanvas, BOrchestrator } from "bootstrap-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import { useActiveBotStore } from "@/stores/activeBot";
+import SideNav from "@/components/SideNav.vue";
 
 const auth = useAuthStore();
 const activeBot = useActiveBotStore();
@@ -23,6 +24,12 @@ watch(
   { immediate: true },
 );
 
+const showNav = ref(false);
+
+// Tapping a link in the drawer should navigate and get the drawer out of the
+// way, not leave it covering the page it just opened.
+watch(() => route.fullPath, () => (showNav.value = false));
+
 function onLogout() {
   auth.logout();
   router.push({ name: "login" });
@@ -31,80 +38,58 @@ function onLogout() {
 
 <template>
   <div class="d-flex flex-column min-vh-100">
+    <a href="#main-content" class="visually-hidden-focusable skip-link">
+      Skip to main content
+    </a>
+
     <header class="border-bottom bg-body-tertiary">
       <div class="d-flex align-items-center justify-content-between py-2 px-3">
-        <RouterLink
-          to="/bots"
-          class="fw-semibold text-decoration-none text-body"
-        >
-          <i class="bi bi-robot me-2" />BrainBot
-        </RouterLink>
+        <div class="d-flex align-items-center gap-2">
+          <BButton
+            variant="outline-secondary"
+            size="sm"
+            class="d-md-none"
+            aria-label="Open navigation"
+            @click="showNav = true"
+          >
+            <i class="bi bi-list" />
+          </BButton>
+
+          <RouterLink
+            to="/bots"
+            class="fw-semibold text-decoration-none text-body"
+          >
+            <i class="bi bi-robot me-2" />BrainBot
+          </RouterLink>
+        </div>
 
         <div class="d-flex align-items-center gap-3">
           <BButton variant="outline-secondary" size="sm" @click="onLogout">
-            <i class="bi bi-box-arrow-right me-1" />Log out
+            <i class="bi bi-box-arrow-right me-1" />
+            <span class="d-none d-sm-inline">Log out</span>
+            <span class="visually-hidden d-sm-none">Log out</span>
           </BButton>
         </div>
       </div>
     </header>
 
-    <div class="d-flex flex-grow-1">
+    <div class="d-flex flex-grow-1" style="min-width: 0">
       <nav
-        class="border-end bg-body-tertiary p-3 d-none d-md-block"
+        class="border-end bg-body-tertiary p-3 d-none d-md-block flex-shrink-0"
         style="width: 15rem"
+        aria-label="Main"
       >
-        <ul class="nav nav-pills flex-column gap-1">
-          <li class="nav-item">
-            <RouterLink to="/bots" class="nav-link" active-class="active">
-              <i class="bi bi-grid me-2" />Bots
-            </RouterLink>
-          </li>
-        </ul>
-
-        <template v-if="botId">
-          <hr />
-          <div class="text-uppercase small text-body-secondary mb-1">
-            Selected bot
-          </div>
-          <div class="small fw-semibold text-truncate mb-2">
-            {{ activeBot.bot?.name ?? "Loading…" }}
-          </div>
-          <ul class="nav nav-pills flex-column gap-1">
-            <li class="nav-item">
-              <RouterLink
-                :to="`/bots/${botId}/qna`"
-                class="nav-link"
-                active-class="active"
-              >
-                <i class="bi bi-chat-square-text me-2" />Q&amp;A
-              </RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink
-                :to="`/bots/${botId}/playground`"
-                class="nav-link"
-                active-class="active"
-              >
-                <i class="bi bi-play-circle me-2" />Playground
-              </RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink
-                :to="`/bots/${botId}/settings`"
-                class="nav-link"
-                active-class="active"
-              >
-                <i class="bi bi-sliders me-2" />Settings
-              </RouterLink>
-            </li>
-          </ul>
-        </template>
+        <SideNav :bot-id="botId" :bot-name="activeBot.bot?.name" />
       </nav>
 
-      <main class="flex-grow-1">
+      <main id="main-content" class="flex-grow-1" style="min-width: 0">
         <RouterView />
       </main>
     </div>
+
+    <BOffcanvas v-model="showNav" placement="start" title="Menu" class="d-md-none">
+      <SideNav :bot-id="botId" :bot-name="activeBot.bot?.name" />
+    </BOffcanvas>
 
     <BOrchestrator />
   </div>

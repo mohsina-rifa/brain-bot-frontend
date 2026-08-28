@@ -28,7 +28,7 @@ watch(online, (isOnline, wasOnline) => {
     v-if="!online || reconnected"
     class="position-fixed top-0 start-50 translate-middle-x mt-2 px-3 py-2 rounded shadow-sm small d-flex align-items-center gap-2"
     :class="online ? 'text-bg-success' : 'text-bg-warning'"
-    style="z-index: 1080"
+    style="z-index: 1080; max-width: calc(100vw - 1.5rem)"
     role="status"
     aria-live="polite"
   >

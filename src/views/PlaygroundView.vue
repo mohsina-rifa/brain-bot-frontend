@@ -38,7 +38,7 @@ watch([() => messages.value.length, pending, failed, sending], async () => {
 const confirmingReset = ref(false);
 
 function requestReset() {
-  if (!messages.length && !failed && !pending) {
+  if (!messages.value.length && !failed.value && !pending.value) {
     reset();
     return;
   }
@@ -70,7 +70,9 @@ const suggestion = computed(
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div>
         <h1 class="h4 mb-1">Playground</h1>
-        <p class="text-body-secondary mb-0 d-flex align-items-center gap-2">
+        <p
+          class="text-body-secondary mb-0 d-flex flex-wrap align-items-center gap-2"
+        >
           <span
             v-if="activeBot.bot?.color"
             class="rounded-circle flex-shrink-0 border"
@@ -100,12 +102,7 @@ const suggestion = computed(
 
     <div
       ref="panel"
-      class="border rounded p-3 mb-3"
-      style="
-        min-height: 24rem;
-        max-height: calc(100vh - 22rem);
-        overflow-y: auto;
-      "
+      class="border rounded p-3 mb-3 chat-panel"
     >
       <template v-if="!messages.length && !pending && !failed">
         <MessageThread
@@ -115,7 +112,7 @@ const suggestion = computed(
         />
         <p
           class="text-body-secondary small mb-0"
-          :class="welcome.length && 'mt-3'"
+          :class="welcome.length ? 'mt-3' : ''"
         >
           {{ suggestion }}
         </p>
@@ -165,3 +162,20 @@ const suggestion = computed(
     </ConfirmDialog>
   </div>
 </template>
+
+<style scoped>
+.chat-panel {
+  min-height: 24rem;
+  max-height: calc(100vh - 22rem);
+  overflow-y: auto;
+}
+
+/* A phone has no room for a 24rem panel plus a header and a composer, so the
+   thread gives up height first and the composer stays on screen. */
+@media (max-width: 767.98px) {
+  .chat-panel {
+    min-height: 12rem;
+    max-height: calc(100vh - 17rem);
+  }
+}
+</style>

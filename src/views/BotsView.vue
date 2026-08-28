@@ -66,7 +66,9 @@ async function onRetryDelete() {
 
 <template>
   <div class="container-fluid py-4 px-4">
-    <div class="d-flex justify-content-between align-items-start mb-3">
+    <div
+      class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3"
+    >
       <div>
         <h1 class="h4 mb-1">Bots</h1>
         <p class="text-body-secondary mb-0 d-flex align-items-center gap-2">

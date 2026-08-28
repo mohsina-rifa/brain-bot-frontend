@@ -162,6 +162,12 @@ function formatDate(iso: string) {
   overflow-y: auto;
 }
 
+@media (max-width: 767.98px) {
+  .qna-scroll {
+    max-height: calc(100vh - 22rem);
+  }
+}
+
 .qna-sticky-head th {
   position: sticky;
   top: 0;

@@ -38,8 +38,8 @@ const botBubble = computed(() =>
       "
     >
       <div
-        class="px-3 py-2 rounded-3 shadow-sm"
-        style="max-width: min(42rem, 80%); white-space: pre-wrap"
+        class="px-3 py-2 rounded-3 shadow-sm chat-bubble"
+        style="max-width: min(42rem, 85%); white-space: pre-wrap"
         :class="
           message.role === 'user'
             ? 'text-bg-primary'
