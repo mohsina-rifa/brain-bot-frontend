@@ -73,8 +73,6 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
 
   let lastFailed: (() => Promise<unknown>) | null = null;
 
-  const canRetry = computed(() => mutationError.value !== null);
-
   function retryMutation() {
     return lastFailed ? lastFailed() : Promise.resolve(null);
   }
@@ -206,7 +204,6 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     pendingId,
     mutationError,
     fieldErrors,
-    canRetry,
     retryMutation,
     clearMutationError,
   };
