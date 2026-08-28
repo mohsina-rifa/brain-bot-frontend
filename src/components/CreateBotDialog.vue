@@ -62,9 +62,28 @@ async function onSubmit() {
       v-if="create.error.value"
       :model-value="true"
       variant="danger"
-      class="mb-3"
+      class="mb-3 d-flex justify-content-between align-items-center gap-3"
     >
-      {{ create.error.value }}
+      <span>{{ create.error.value }}</span>
+      <BButton
+        variant="outline-danger"
+        size="sm"
+        class="flex-shrink-0"
+        :disabled="create.loading.value"
+        @click="onSubmit"
+      >
+        Retry
+      </BButton>
+    </BAlert>
+
+    <BAlert
+      v-if="create.loading.value && create.slow.value"
+      :model-value="true"
+      variant="info"
+      class="mb-3 d-flex align-items-center gap-2"
+    >
+      <BSpinner small />
+      <span>Still creating — the server is taking longer than usual.</span>
     </BAlert>
 
     <BForm novalidate @submit.prevent="onSubmit">

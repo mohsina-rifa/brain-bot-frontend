@@ -7,13 +7,17 @@ export function useBots(limit = 10) {
   const page = ref(1);
   const search = ref("");
 
-  const request = useApi<Paginated<Bot>, [ListQuery]>((signal, query) =>
-    client
-      .get<Paginated<Bot>>("/bots", { params: query, signal })
-      .then((r) => r.data),
+  // Reading a list is safe to repeat, so this one retries with backoff.
+  const request = useApi<Paginated<Bot>, [ListQuery]>(
+    (signal, query) =>
+      client
+        .get<Paginated<Bot>>("/bots", { params: query, signal })
+        .then((r) => r.data),
+    { attempts: 3 },
   );
 
   const bots = computed(() => request.data.value?.data ?? []);
+  const hasLoaded = computed(() => request.data.value !== null);
   const total = computed(() => request.data.value?.total ?? 0);
   const pageCount = computed(() => Math.max(1, Math.ceil(total.value / limit)));
 
@@ -33,9 +37,13 @@ export function useBots(limit = 10) {
   const removing = ref<string | null>(null);
   const removeError = ref<string | null>(null);
 
+  // Held so the alert's Retry button re-runs the delete that actually failed.
+  let lastRemoved: string | null = null;
+
   async function remove(id: string): Promise<boolean> {
     removing.value = id;
     removeError.value = null;
+    lastRemoved = id;
     try {
       await client.delete(`/bots/${id}`);
       await load();
@@ -49,19 +57,26 @@ export function useBots(limit = 10) {
     }
   }
 
+  function retryRemove(): Promise<boolean> {
+    return lastRemoved ? remove(lastRemoved) : Promise.resolve(false);
+  }
+
   return {
     page,
     search,
     bots,
+    hasLoaded,
     total,
     pageCount,
     loading: request.loading,
     error: request.error,
     slow: request.slow,
+    retrying: request.retrying,
     load,
     goTo,
     retry: request.retry,
     remove,
+    retryRemove,
     removing,
     removeError,
   };

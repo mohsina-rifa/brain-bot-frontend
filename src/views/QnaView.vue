@@ -14,6 +14,7 @@ import QnaTable from "@/components/QnaTable.vue";
 import QnaSearchBar from "@/components/QnaSearchBar.vue";
 import QnaFormDialog from "@/components/QnaFormDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import SkeletonTable from "@/components/SkeletonTable.vue";
 import type { Qna } from "@/types/api";
 
 const props = defineProps<{ id: string }>();
@@ -29,6 +30,7 @@ const {
   loading,
   error,
   slow,
+  retrying,
   load,
   goTo,
   setLimit,
@@ -40,6 +42,7 @@ const {
   remove,
   findDuplicate,
   saving,
+  slowSave,
   pendingId,
   mutationError,
   fieldErrors,
@@ -162,6 +165,12 @@ async function onRetry() {
 
 const pendingDelete = ref<Qna | null>(null);
 
+function onRequestDelete(row: Qna) {
+  // Never open the dialog carrying the previous attempt's error.
+  clearMutationError();
+  pendingDelete.value = row;
+}
+
 async function confirmDelete() {
   const row = pendingDelete.value;
   if (!row) return;
@@ -186,6 +195,8 @@ async function confirmDelete() {
           <span v-if="loading && !hasLoaded">loading…</span>
           <span v-else-if="error">unavailable</span>
           <span v-else>{{ rangeLabel() }}</span>
+          <!-- Refetch: the table stays put and only this marker moves. -->
+          <BSpinner v-if="loading && hasLoaded" small class="ms-2" />
         </p>
       </div>
       <BButton variant="primary" @click="openCreate">
@@ -201,10 +212,15 @@ async function confirmDelete() {
       />
     </div>
 
-    <div v-if="loading && !hasLoaded" class="text-center py-5">
-      <BSpinner />
-      <p v-if="slow" class="text-body-secondary small mt-3 mb-0">
-        Still working — the server is taking longer than usual.
+    <!-- First load: a skeleton of the table that is coming. -->
+    <div v-if="loading && !hasLoaded">
+      <SkeletonTable :rows="5" :columns="3" />
+      <p v-if="slow" class="text-body-secondary small mt-3 mb-0 text-center">
+        {{
+          retrying
+            ? "That did not go through. Trying again…"
+            : "Still working — the server is taking longer than usual."
+        }}
       </p>
     </div>
 
@@ -216,7 +232,15 @@ async function confirmDelete() {
       class="d-flex justify-content-between align-items-center"
     >
       <span>{{ error }}</span>
-      <BButton variant="outline-danger" size="sm" @click="retry">Retry</BButton>
+      <BButton
+        variant="outline-danger"
+        size="sm"
+        class="flex-shrink-0"
+        :disabled="loading"
+        @click="retry"
+      >
+        Retry
+      </BButton>
     </BAlert>
 
     <div
@@ -256,7 +280,7 @@ async function confirmDelete() {
         :highlight="search"
         :pending-id="pendingId"
         @edit="openEdit"
-        @remove="(row: Qna) => (pendingDelete = row)"
+        @remove="onRequestDelete"
       />
       </div>
 
@@ -305,6 +329,7 @@ async function confirmDelete() {
       v-model="showForm"
       :entry="editing"
       :busy="saving"
+      :slow="slowSave"
       :error="mutationError"
       :field-errors="fieldErrors"
       :duplicate-question="duplicateOf?.question ?? null"
@@ -321,6 +346,24 @@ async function confirmDelete() {
       @update:model-value="(v: boolean) => { if (!v) pendingDelete = null }"
       @confirm="confirmDelete"
     >
+      <BAlert
+        v-if="mutationError"
+        :model-value="true"
+        variant="danger"
+        class="mb-3 d-flex justify-content-between align-items-center gap-3"
+      >
+        <span>{{ mutationError }}</span>
+        <BButton
+          variant="outline-danger"
+          size="sm"
+          class="flex-shrink-0"
+          :disabled="pendingId !== null"
+          @click="onRetry"
+        >
+          Retry
+        </BButton>
+      </BAlert>
+
       Delete <strong>{{ pendingDelete?.question }}</strong
       >? The bot will no longer be able to answer from it. This cannot be undone.
     </ConfirmDialog>

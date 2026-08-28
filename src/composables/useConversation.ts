@@ -1,5 +1,6 @@
 import { computed, ref, type Ref } from "vue";
 import client, { toMessage } from "@/api/client";
+import { useSlowFlag } from "@/composables/useSlowFlag";
 import type { Conversation, Message, QnaMatch } from "@/types/api";
 
 export function useConversation(botId: Ref<string>) {
@@ -12,6 +13,10 @@ export function useConversation(botId: Ref<string>) {
   const pending = ref<string | null>(null);
 
   const matches = ref<QnaMatch[]>([]);
+
+  // A reply has to be embedded and matched before it comes back, so a slow
+  // model or a cold index can take a while. Say so rather than spin silently.
+  const { slow, start: startSlow, stop: stopSlow } = useSlowFlag();
 
   async function loadMatches(question: string, conversationId?: string) {
     try {
@@ -48,6 +53,7 @@ export function useConversation(botId: Ref<string>) {
     failed.value = null;
     pending.value = text;
     matches.value = [];
+    startSlow();
 
     try {
       const res = await client.post<{ data: Conversation }>("/conversations", {
@@ -61,11 +67,13 @@ export function useConversation(botId: Ref<string>) {
       return true;
     } catch (err) {
       error.value = toMessage(err);
+      // The message is kept, not lost, so Retry re-sends exactly what was typed.
       failed.value = text;
       pending.value = null;
       return false;
     } finally {
       sending.value = false;
+      stopSlow();
     }
   }
 
@@ -79,6 +87,7 @@ export function useConversation(botId: Ref<string>) {
     failed.value = null;
     pending.value = null;
     matches.value = [];
+    stopSlow();
   }
 
   return {
@@ -86,6 +95,7 @@ export function useConversation(botId: Ref<string>) {
     messages,
     started,
     sending,
+    slow,
     error,
     failed,
     pending,

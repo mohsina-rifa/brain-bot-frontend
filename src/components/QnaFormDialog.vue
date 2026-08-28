@@ -15,6 +15,7 @@ const show = defineModel<boolean>({ default: false });
 
 const props = defineProps<{
   busy?: boolean;
+  slow?: boolean;
   error?: string | null;
   entry?: Qna | null;
   fieldErrors?: Record<string, string>;
@@ -141,6 +142,16 @@ function onSubmit() {
         >
           Let me change it
         </BButton>
+      </div>
+    </BAlert>
+
+    <BAlert v-if="busy && slow" :model-value="true" variant="info" class="mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <BSpinner small />
+        <span>
+          Still saving. The server embeds the answer before it replies, which can
+          take a few seconds — leave this open.
+        </span>
       </div>
     </BAlert>
 

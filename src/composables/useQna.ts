@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from "vue";
 import client, { toFieldErrors, toMessage } from "@/api/client";
 import { useApi } from "@/composables/useApi";
+import { useSlowFlag } from "@/composables/useSlowFlag";
 import type { Paginated, Qna } from "@/types/api";
 
 interface QnaListQuery {
@@ -15,10 +16,13 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   const limit = ref(initialLimit);
   const search = ref("");
 
-  const request = useApi<Paginated<Qna>, [QnaListQuery]>((signal, query) =>
-    client
-      .get<Paginated<Qna>>("/qna", { params: query, signal })
-      .then((r) => r.data),
+  // Reading a list is safe to repeat, so this one retries with backoff.
+  const request = useApi<Paginated<Qna>, [QnaListQuery]>(
+    (signal, query) =>
+      client
+        .get<Paginated<Qna>>("/qna", { params: query, signal })
+        .then((r) => r.data),
+    { attempts: 3 },
   );
 
   const rows = computed(() => request.data.value?.data ?? []);
@@ -63,6 +67,10 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
 
   const fieldErrors = ref<Record<string, string>>({});
 
+  // Creating an entry has to embed the answer before it returns, which is the
+  // slowest thing in the app. Warn rather than let it look frozen.
+  const { slow: slowSave, start: startSlow, stop: stopSlow } = useSlowFlag();
+
   let lastFailed: (() => Promise<unknown>) | null = null;
 
   const canRetry = computed(() => mutationError.value !== null);
@@ -80,12 +88,15 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   function recordFailure(err: unknown, retry: () => Promise<unknown>) {
     mutationError.value = toMessage(err);
     fieldErrors.value = toFieldErrors(err);
+    // Every failed mutation leaves behind the exact call that failed, so the
+    // Retry button re-runs the real thing instead of being decorative.
     lastFailed = retry;
   }
 
   async function create(question: string, answer: string): Promise<Qna | null> {
     saving.value = true;
-    mutationError.value = null;
+    clearMutationError();
+    startSlow();
     try {
       const res = await client.post<{ data: Qna }>("/qna", {
         question,
@@ -95,10 +106,11 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       await load();
       return res.data.data;
     } catch (err) {
-      mutationError.value = toMessage(err);
+      recordFailure(err, () => create(question, answer));
       return null;
     } finally {
       saving.value = false;
+      stopSlow();
     }
   }
 
@@ -110,6 +122,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     saving.value = true;
     pendingId.value = id;
     clearMutationError();
+    startSlow();
     try {
       const res = await client.put<{ data: Qna }>(`/qna/${id}`, {
         question,
@@ -123,12 +136,14 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     } finally {
       saving.value = false;
       pendingId.value = null;
+      stopSlow();
     }
   }
 
   async function remove(id: string): Promise<boolean> {
     pendingId.value = id;
     clearMutationError();
+    startSlow();
     try {
       await client.delete(`/qna/${id}`);
       await load();
@@ -139,6 +154,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       return false;
     } finally {
       pendingId.value = null;
+      stopSlow();
     }
   }
 
@@ -159,6 +175,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
         ) ?? null
       );
     } catch {
+      // A duplicate check that cannot run must not block the save.
       return null;
     }
   }
@@ -174,6 +191,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     loading: request.loading,
     error: request.error,
     slow: request.slow,
+    retrying: request.retrying,
     load,
     goTo,
     setLimit,
@@ -184,6 +202,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     remove,
     findDuplicate,
     saving,
+    slowSave,
     pendingId,
     mutationError,
     fieldErrors,

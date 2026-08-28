@@ -15,6 +15,7 @@ const {
   messages,
   started,
   sending,
+  slow,
   error,
   failed,
   pending,
@@ -126,6 +127,7 @@ const suggestion = computed(
         :pending="pending"
         :failed="failed"
         :thinking="sending"
+        :slow="slow"
         :matches="matches"
         @retry="retry"
       />

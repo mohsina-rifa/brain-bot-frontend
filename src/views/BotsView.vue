@@ -6,20 +6,24 @@ import { useBots } from "@/composables/useBots";
 import { useActiveBotStore } from "@/stores/activeBot";
 import CreateBotDialog from "@/components/CreateBotDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import SkeletonTable from "@/components/SkeletonTable.vue";
 import type { Bot } from "@/types/api";
 
 const {
   page,
   bots,
+  hasLoaded,
   total,
   pageCount,
   loading,
   error,
   slow,
+  retrying,
   load,
   goTo,
   retry,
   remove,
+  retryRemove,
   removing,
   removeError,
 } = useBots();
@@ -53,6 +57,11 @@ async function confirmDelete() {
   if (activeBot.bot?._id === bot._id) activeBot.clear();
   pendingDelete.value = null;
 }
+
+async function onRetryDelete() {
+  const ok = await retryRemove();
+  if (ok) pendingDelete.value = null;
+}
 </script>
 
 <template>
@@ -60,8 +69,12 @@ async function confirmDelete() {
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div>
         <h1 class="h4 mb-1">Bots</h1>
-        <p class="text-body-secondary mb-0">
-          {{ total }} {{ total === 1 ? "bot" : "bots" }}
+        <p class="text-body-secondary mb-0 d-flex align-items-center gap-2">
+          <span v-if="!hasLoaded && loading">Loading…</span>
+          <span v-else-if="error">Unavailable</span>
+          <span v-else>{{ total }} {{ total === 1 ? "bot" : "bots" }}</span>
+          <!-- Refetch: the table stays put and only this marker moves. -->
+          <BSpinner v-if="hasLoaded && loading" small />
         </p>
       </div>
       <BButton variant="primary" @click="showCreate = true">
@@ -73,18 +86,37 @@ async function confirmDelete() {
       v-if="removeError"
       :model-value="true"
       variant="danger"
-      dismissible
-      class="mb-3"
-      @closed="removeError = null"
+      class="mb-3 d-flex justify-content-between align-items-center gap-3"
     >
-      {{ removeError }}
+      <span>{{ removeError }}</span>
+      <span class="d-flex gap-2 flex-shrink-0">
+        <BButton
+          variant="outline-danger"
+          size="sm"
+          :disabled="removing !== null"
+          @click="onRetryDelete"
+        >
+          Retry delete
+        </BButton>
+        <BButton
+          variant="outline-secondary"
+          size="sm"
+          @click="removeError = null"
+        >
+          Dismiss
+        </BButton>
+      </span>
     </BAlert>
 
-    <!-- Loading -->
-    <div v-if="loading" class="text-center py-5">
-      <BSpinner />
-      <p v-if="slow" class="text-body-secondary small mt-3 mb-0">
-        Still working — the server is taking longer than usual.
+    <!-- First load: a skeleton of the table that is coming. -->
+    <div v-if="loading && !hasLoaded">
+      <SkeletonTable :rows="5" :columns="4" />
+      <p v-if="slow" class="text-body-secondary small mt-3 mb-0 text-center">
+        {{
+          retrying
+            ? "That did not go through. Trying again…"
+            : "Still working — the server is taking longer than usual."
+        }}
       </p>
     </div>
 
@@ -93,10 +125,18 @@ async function confirmDelete() {
       v-else-if="error"
       :model-value="true"
       variant="danger"
-      class="d-flex justify-content-between align-items-center"
+      class="d-flex justify-content-between align-items-center gap-3"
     >
       <span>{{ error }}</span>
-      <BButton variant="outline-danger" size="sm" @click="retry">Retry</BButton>
+      <BButton
+        variant="outline-danger"
+        size="sm"
+        class="flex-shrink-0"
+        :disabled="loading"
+        @click="retry"
+      >
+        Retry
+      </BButton>
     </BAlert>
 
     <!-- Empty -->
@@ -111,7 +151,12 @@ async function confirmDelete() {
 
     <!-- Table -->
     <div v-else>
-      <div class="table-responsive border rounded">
+      <div
+        class="table-responsive border rounded"
+        :class="{ 'opacity-50': loading }"
+        :aria-busy="loading"
+        style="transition: opacity 120ms ease"
+      >
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
@@ -191,7 +236,7 @@ async function confirmDelete() {
           <BButton
             size="sm"
             variant="outline-secondary"
-            :disabled="page <= 1"
+            :disabled="page <= 1 || loading"
             @click="goTo(page - 1)"
           >
             Previous
@@ -199,7 +244,7 @@ async function confirmDelete() {
           <BButton
             size="sm"
             variant="outline-secondary"
-            :disabled="page >= pageCount"
+            :disabled="page >= pageCount || loading"
             @click="goTo(page + 1)"
           >
             Next

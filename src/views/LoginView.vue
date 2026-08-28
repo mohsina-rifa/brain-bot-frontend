@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import {
   BForm,
@@ -21,6 +21,10 @@ const password = ref("");
 const showPassword = ref(false);
 const submitting = ref(false);
 const error = ref<string | null>(null);
+
+// main.ts sends the user here with reason=expired when a request comes back 401,
+// so the bounce arrives with an explanation instead of looking like a glitch.
+const expired = computed(() => route.query.reason === "expired");
 
 async function onSubmit() {
   error.value = null;
@@ -45,6 +49,15 @@ async function onSubmit() {
       <p class="text-body-secondary mb-4">
         Manage your bots and their knowledge base.
       </p>
+
+      <BAlert
+        v-if="expired && !error"
+        :model-value="true"
+        variant="warning"
+        class="mb-3"
+      >
+        Your session has expired. Sign in again to pick up where you left off.
+      </BAlert>
 
       <BAlert v-if="error" :model-value="true" variant="danger" class="mb-3">
         {{ error }}

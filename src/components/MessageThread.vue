@@ -8,6 +8,7 @@ const props = defineProps<{
   pending?: string | null;
   failed?: string | null;
   thinking?: boolean;
+  slow?: boolean;
   matches?: QnaMatch[];
   accent?: string;
 }>();
@@ -115,7 +116,13 @@ const botBubble = computed(() =>
         class="px-3 py-2 rounded-3 bg-body-tertiary border d-flex align-items-center gap-2"
       >
         <BSpinner small />
-        <span class="small text-body-secondary">Bot is thinking…</span>
+        <span class="small text-body-secondary">
+          {{
+            slow
+              ? "Still thinking — the reply is taking longer than usual."
+              : "Bot is thinking…"
+          }}
+        </span>
       </div>
     </div>
   </div>
