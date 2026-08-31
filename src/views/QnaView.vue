@@ -14,7 +14,9 @@ import QnaTable from "@/components/QnaTable.vue";
 import QnaSearchBar from "@/components/QnaSearchBar.vue";
 import QnaFormDialog from "@/components/QnaFormDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import SkeletonTable from "@/components/SkeletonTable.vue";
+import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
+import ErrorState from "@/components/ErrorState.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import type { Qna } from "@/types/api";
 
 const props = defineProps<{ id: string }>();
@@ -214,61 +216,41 @@ async function confirmDelete() {
       />
     </div>
 
-    <!-- First load: a skeleton of the table that is coming. -->
-    <div v-if="loading && !hasLoaded">
-      <SkeletonTable :rows="5" :columns="3" />
-      <p v-if="slow" class="text-body-secondary small mt-3 mb-0 text-center">
-        {{
-          retrying
-            ? "That did not go through. Trying again…"
-            : "Still working — the server is taking longer than usual."
-        }}
-      </p>
-    </div>
+    <LoadingSkeleton
+      v-if="loading && !hasLoaded"
+      :rows="5"
+      :columns="3"
+      :slow="slow"
+      :retrying="retrying"
+    />
 
-    <!-- Error -->
-    <BAlert
+    <ErrorState
       v-else-if="error"
-      :model-value="true"
-      variant="danger"
-      class="d-flex justify-content-between align-items-center"
-    >
-      <span>{{ error }}</span>
-      <BButton
-        variant="outline-danger"
-        size="sm"
-        class="flex-shrink-0"
-        :disabled="loading"
-        @click="retry"
-      >
-        Retry
-      </BButton>
-    </BAlert>
+      :message="error"
+      :busy="loading"
+      @retry="retry"
+    />
 
-    <div
+    <EmptyState
       v-else-if="!rows.length && search"
-      class="text-center border rounded py-5 px-3"
+      icon="search"
+      :title="`No entries match “${search}”`"
+      action-label="Clear search"
+      action-variant="outline-secondary"
+      @action="onSearch('')"
     >
-      <i class="bi bi-search fs-1 text-body-secondary d-block mb-2" />
-      <p class="fw-semibold mb-1">No entries match “{{ search }}”</p>
-      <p class="text-body-secondary mb-3">
-        This bot has {{ hasLoaded ? "other" : "" }} entries, just none containing
-        that text. Try a different word, or clear the search.
-      </p>
-      <BButton variant="outline-secondary" @click="onSearch('')">
-        Clear search
-      </BButton>
-    </div>
+      This bot has {{ hasLoaded ? "other" : "" }} entries, just none containing
+      that text. Try a different word, or clear the search.
+    </EmptyState>
 
-    <div v-else-if="!rows.length" class="text-center border rounded py-5 px-3">
-      <i class="bi bi-chat-square-text fs-1 text-body-secondary d-block mb-2" />
-      <p class="fw-semibold mb-1">No Q&amp;A entries yet</p>
-      <p class="text-body-secondary mb-3">
-        This bot has nothing to answer from. Add a question and answer to start
-        building its knowledge base.
-      </p>
-      <BButton variant="primary" @click="openCreate">Add entry</BButton>
-    </div>
+    <EmptyState
+      v-else-if="!rows.length"
+      icon="chat-square-text"
+      title="No Q&A entries yet"
+      description="This bot has nothing to answer from. Add a question and answer to start building its knowledge base."
+      action-label="Add entry"
+      @action="openCreate"
+    />
 
     <!-- Content -->
     <div v-else>

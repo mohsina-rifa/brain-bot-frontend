@@ -6,7 +6,9 @@ import { useBots } from "@/composables/useBots";
 import { useActiveBotStore } from "@/stores/activeBot";
 import CreateBotDialog from "@/components/CreateBotDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import SkeletonTable from "@/components/SkeletonTable.vue";
+import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
+import ErrorState from "@/components/ErrorState.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import type { Bot } from "@/types/api";
 
 const {
@@ -75,7 +77,6 @@ async function onRetryDelete() {
           <span v-if="!hasLoaded && loading">Loading…</span>
           <span v-else-if="error">Unavailable</span>
           <span v-else>{{ total }} {{ total === 1 ? "bot" : "bots" }}</span>
-          <!-- Refetch: the table stays put and only this marker moves. -->
           <BSpinner v-if="hasLoaded && loading" small />
         </p>
       </div>
@@ -110,46 +111,29 @@ async function onRetryDelete() {
       </span>
     </BAlert>
 
-    <!-- First load: a skeleton of the table that is coming. -->
-    <div v-if="loading && !hasLoaded">
-      <SkeletonTable :rows="5" :columns="4" />
-      <p v-if="slow" class="text-body-secondary small mt-3 mb-0 text-center">
-        {{
-          retrying
-            ? "That did not go through. Trying again…"
-            : "Still working — the server is taking longer than usual."
-        }}
-      </p>
-    </div>
+    <LoadingSkeleton
+      v-if="loading && !hasLoaded"
+      :rows="5"
+      :columns="4"
+      :slow="slow"
+      :retrying="retrying"
+    />
 
-    <!-- Error -->
-    <BAlert
+    <ErrorState
       v-else-if="error"
-      :model-value="true"
-      variant="danger"
-      class="d-flex justify-content-between align-items-center gap-3"
-    >
-      <span>{{ error }}</span>
-      <BButton
-        variant="outline-danger"
-        size="sm"
-        class="flex-shrink-0"
-        :disabled="loading"
-        @click="retry"
-      >
-        Retry
-      </BButton>
-    </BAlert>
+      :message="error"
+      :busy="loading"
+      @retry="retry"
+    />
 
-    <!-- Empty -->
-    <div v-else-if="!bots.length" class="text-center border rounded py-5 px-3">
-      <i class="bi bi-robot fs-1 text-body-secondary d-block mb-2" />
-      <p class="fw-semibold mb-1">No bots yet</p>
-      <p class="text-body-secondary mb-3">
-        Create your first bot to start building a knowledge base.
-      </p>
-      <BButton variant="primary" @click="showCreate = true">Create bot</BButton>
-    </div>
+    <EmptyState
+      v-else-if="!bots.length"
+      icon="robot"
+      title="No bots yet"
+      description="Create your first bot to start building a knowledge base."
+      action-label="Create bot"
+      @action="showCreate = true"
+    />
 
     <!-- Table -->
     <div v-else>
