@@ -61,6 +61,7 @@ async function onSubmit() {
     v-model="show"
     title="Create bot"
     :no-close-on-backdrop="create.loading.value"
+    scrollable
   >
     <BAlert
       v-if="create.error.value"

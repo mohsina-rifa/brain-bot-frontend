@@ -54,7 +54,7 @@ function formatDate(iso: string) {
 
 <template>
   <div class="table-responsive border rounded qna-scroll">
-    <table class="table table-hover align-middle mb-0">
+    <table class="table table-hover align-middle mb-0 qna-table">
       <thead class="table-light qna-sticky-head">
         <tr>
           <th scope="col" style="width: 2.5rem">
@@ -62,8 +62,16 @@ function formatDate(iso: string) {
           </th>
           <th scope="col" style="width: 32%">Question</th>
           <th scope="col">Answer</th>
-          <th scope="col" class="text-nowrap">Updated</th>
-          <th scope="col" class="text-end">Actions</th>
+          <th
+            scope="col"
+            class="text-nowrap d-none d-lg-table-cell"
+            style="width: 1%"
+          >
+            Updated
+          </th>
+          <th scope="col" class="text-end text-nowrap" style="width: 1%">
+            Actions
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -109,7 +117,9 @@ function formatDate(iso: string) {
                 ></template
               >
             </td>
-            <td class="text-nowrap small text-body-secondary">
+            <td
+              class="text-nowrap small text-body-secondary d-none d-lg-table-cell"
+            >
               {{ formatDate(row.updatedAt) }}
             </td>
             <td class="text-end text-nowrap">
@@ -162,9 +172,13 @@ function formatDate(iso: string) {
   overflow-y: auto;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .qna-scroll {
     max-height: calc(100vh - 22rem);
+  }
+
+  .qna-table {
+    min-width: 28rem;
   }
 }
 

@@ -84,6 +84,7 @@ function onSubmit() {
     :title="isEdit ? 'Edit Q&A entry' : 'Add Q&A entry'"
     :no-close-on-backdrop="busy"
     size="lg"
+    scrollable
     @hide="onHide"
   >
     <BAlert

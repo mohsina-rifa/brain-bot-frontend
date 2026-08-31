@@ -26,7 +26,7 @@ const emit = defineEmits<{ confirm: [] }>();
 </script>
 
 <template>
-  <BModal v-model="show" :title="title" :no-close-on-backdrop="busy">
+  <BModal v-model="show" :title="title" :no-close-on-backdrop="busy" scrollable>
     <div class="mb-0">
       <slot>{{ message }}</slot>
     </div>

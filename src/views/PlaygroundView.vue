@@ -64,7 +64,7 @@ const suggestion = computed(
 
 <template>
   <div
-    class="container-fluid py-4 px-4 d-flex flex-column"
+    class="container-fluid py-4 px-4 d-flex flex-column playground-page"
     style="min-height: 0"
   >
     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -198,6 +198,18 @@ const suggestion = computed(
   .chat-panel {
     min-height: 12rem;
     max-height: calc(100vh - 17rem);
+  }
+}
+
+@media (max-height: 32rem) {
+  .chat-panel {
+    min-height: 0;
+    max-height: calc(100vh - 14rem);
+  }
+
+  .playground-page {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
   }
 }
 </style>
