@@ -8,6 +8,7 @@ import {
   BFormSelect,
   useToast,
 } from "bootstrap-vue-next";
+import { isSessionEnded } from "@/api/client";
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
 import QnaTable from "@/components/QnaTable.vue";
@@ -121,6 +122,7 @@ function notifySaved(title: string) {
 }
 
 function notifyFailed(title: string) {
+  if (isSessionEnded()) return;
   toast.create({
     title,
     body: mutationError.value ?? undefined,

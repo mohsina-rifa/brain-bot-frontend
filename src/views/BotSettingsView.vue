@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, toRef, watch } from "vue";
 import { useToast } from "bootstrap-vue-next";
-import client, { toFieldErrors, toMessage } from "@/api/client";
+import client, { isSessionEnded, toFieldErrors, toMessage } from "@/api/client";
 import { useActiveBotStore } from "@/stores/activeBot";
 import { useSlowFlag } from "@/composables/useSlowFlag";
 import BrandingForm from "@/components/BrandingForm.vue";
@@ -57,6 +57,7 @@ async function save(values: Record<string, string>) {
   } catch (err) {
     error.value = toMessage(err);
     fieldErrors.value = toFieldErrors(err);
+    if (isSessionEnded()) return;
     toast.create({
       title: "Could not save branding",
       body: error.value ?? undefined,

@@ -12,6 +12,16 @@ export function setUnauthorizedHandler(fn: () => void) {
   onUnauthorized = fn
 }
 
+let sessionEnded = false
+
+export function isSessionEnded(): boolean {
+  return sessionEnded
+}
+
+export function setSessionEnded(value: boolean) {
+  sessionEnded = value
+}
+
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) config.headers.Authorization = `Bearer ${token}`

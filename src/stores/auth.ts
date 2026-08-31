@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import client from "@/api/client";
+import client, { setSessionEnded } from "@/api/client";
 import type { LoginResponse } from "@/types/api";
 
 const TOKEN_KEY = "token";
@@ -43,6 +43,7 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = value;
     user.value = decodeToken(value);
     localStorage.setItem(TOKEN_KEY, value);
+    setSessionEnded(false);
   }
 
   function logout() {

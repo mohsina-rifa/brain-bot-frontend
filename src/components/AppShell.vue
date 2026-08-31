@@ -32,6 +32,7 @@ watch(() => route.fullPath, () => (showNav.value = false));
 
 function onLogout() {
   auth.logout();
+  activeBot.clear();
   router.push({ name: "login" });
 }
 </script>
