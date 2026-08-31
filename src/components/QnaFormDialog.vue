@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import {
   BModal,
   BForm,
@@ -43,8 +43,11 @@ const isDirty = computed(
 
 const confirmingDiscard = ref(false);
 
+const closingAfterSubmit = ref(false);
+
 watch(show, (open) => {
   if (!open) return;
+  closingAfterSubmit.value = false;
   question.value = props.entry?.question ?? "";
   answer.value = props.entry?.answer ?? "";
   initial.value = { question: question.value, answer: answer.value };
@@ -52,6 +55,10 @@ watch(show, (open) => {
 });
 
 function onHide(event: { preventDefault: () => void }) {
+  if (closingAfterSubmit.value) {
+    closingAfterSubmit.value = false;
+    return;
+  }
   if (!isDirty.value || props.busy) return;
   event.preventDefault();
   confirmingDiscard.value = true;
@@ -74,8 +81,29 @@ function requestClose() {
 
 function onSubmit() {
   if (props.busy) return;
+  closingAfterSubmit.value = true;
   emit("submit", question.value.trim(), answer.value.trim());
 }
+
+watch(
+  () => props.busy,
+  async (busy, wasBusy) => {
+    if (busy || !wasBusy || !show.value) return;
+    await nextTick();
+    const dialog = document.querySelector(".modal.show");
+    const target =
+      dialog?.querySelector<HTMLElement>("[data-retry]") ??
+      document.getElementById("qna-question");
+    target?.focus();
+  },
+);
+
+watch(
+  () => [props.error, props.duplicateQuestion],
+  ([err, dup]) => {
+    if (err || dup) closingAfterSubmit.value = false;
+  },
+);
 </script>
 
 <template>
@@ -110,6 +138,7 @@ function onSubmit() {
     >
       <span>{{ error }}</span>
       <BButton
+        data-retry
         variant="outline-danger"
         size="sm"
         class="flex-shrink-0"

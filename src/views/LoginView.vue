@@ -104,9 +104,14 @@ async function onSubmit() {
               variant="outline-secondary"
               type="button"
               :disabled="submitting"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              :aria-pressed="showPassword"
               @click="showPassword = !showPassword"
             >
-              <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" />
+              <i
+                :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"
+                aria-hidden="true"
+              />
             </BButton>
           </div>
         </BFormGroup>
