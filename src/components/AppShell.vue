@@ -29,15 +29,11 @@ watch(
 
 const showNav = ref(false);
 
-// Tapping a link in the drawer should navigate and get the drawer out of the
-// way, not leave it covering the page it just opened.
 watch(() => route.fullPath, () => (showNav.value = false));
 
 function onLogout() {
   auth.logout();
   activeBot.clear();
-  // Same session boundary the 401 handler enforces: unsent writes belong to the
-  // session that made them and must not replay under the next one.
   queue.clear();
   router.push({ name: "login" });
 }
@@ -90,8 +86,6 @@ function onLogout() {
       </nav>
 
       <main id="main-content" class="flex-grow-1" style="min-width: 0">
-        <!-- Inside the shell, not around it: a screen that crashes should leave
-             the header and nav standing, so there is somewhere to go next. -->
         <ErrorBoundary>
           <RouterView />
         </ErrorBoundary>

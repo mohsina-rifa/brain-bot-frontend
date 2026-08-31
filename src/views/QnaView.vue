@@ -163,8 +163,6 @@ async function onSubmit(question: string, answer: string) {
     showForm.value = false;
     notifySaved(wasEdit ? "Entry updated" : "Entry added");
   } else if (queued.value) {
-    // Held, not lost. Keeping the dialog open would ask the user to sit and
-    // watch a form they cannot submit until the connection returns.
     showForm.value = false;
     notifyQueued(wasEdit ? "Edit waiting to send" : "Entry waiting to send");
   } else {

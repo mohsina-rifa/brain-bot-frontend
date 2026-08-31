@@ -133,15 +133,6 @@ export function isRetryable(error: unknown): boolean {
   return status === 429 || (status >= 500 && status < 600)
 }
 
-/**
- * The narrow case the write queue is allowed to act on: the browser itself has
- * no connection, so the request never left the machine.
- *
- * Deliberately not "any request that failed". A 400 will fail again in ten
- * minutes' time, and a server that is down while the browser is online is a
- * local backend the user can restart — promising either one will be sent later
- * is a promise we cannot keep.
- */
 export function isOffline(error: unknown): boolean {
   if (axios.isCancel(error)) return false
   const err = error as AxiosError

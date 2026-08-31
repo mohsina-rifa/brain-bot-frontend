@@ -35,10 +35,6 @@ watch(
   { immediate: true },
 );
 
-/**
- * Returns whether the branding actually landed, so the write queue can tell a
- * replay that worked from one that has to stay queued.
- */
 async function save(values: Record<string, string>): Promise<boolean> {
   lastValues = values;
   saving.value = true;
@@ -62,8 +58,6 @@ async function save(values: Record<string, string>): Promise<boolean> {
     });
     return true;
   } catch (err) {
-    // Offline: held with the values as typed and sent on reconnect. No red
-    // error, because nothing here is wrong and nothing needs re-entering.
     if (queue.enqueueIfOffline(err, "Branding changes", () => save(values))) {
       toast.create({
         title: "Branding waiting to send",
@@ -77,8 +71,6 @@ async function save(values: Record<string, string>): Promise<boolean> {
 
     error.value = toMessage(err);
     fieldErrors.value = toFieldErrors(err);
-    // The session ended and the app is already navigating to login; a red toast
-    // about branding would arrive there with nothing to point at.
     if (isSessionEnded()) return false;
     toast.create({
       title: "Could not save branding",

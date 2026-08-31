@@ -29,20 +29,9 @@ export interface UseApi<T, A extends unknown[]> {
   retrying: Ref<boolean>
   run: (...args: A) => Promise<T | null>
   retry: () => Promise<T | null>
-  /** Abandon the in-flight request. Reads only — see cancel() below. */
   cancel: () => void
 }
 
-/**
- * The one data-fetching primitive for this app.
- *
- * Deliberately hand-rolled rather than pulling in TanStack Query: everything
- * TASK.md asks for — loading, empty, success, failure, recovery, and clarity
- * on slow operations — is covered by these refs.
- *
- * Requests are aborted when the owning scope is disposed, so a component that
- * unmounts mid-flight cannot write to a dead ref.
- */
 export function useApi<T, A extends unknown[] = []>(
   fn: (signal: AbortSignal, ...args: A) => Promise<T>,
   options: UseApiOptions = {},
@@ -82,8 +71,6 @@ export function useApi<T, A extends unknown[] = []>(
     slow.value = false
     retrying.value = false
     clearSlowTimer()
-    // The clock covers the whole run, retries included: what the user cares
-    // about is how long they have been waiting, not which attempt we are on.
     slowTimer = setTimeout(() => {
       slow.value = true
     }, SLOW_AFTER_MS)
@@ -96,8 +83,6 @@ export function useApi<T, A extends unknown[] = []>(
           data.value = result
           return result
         } catch (err) {
-          // A newer call superseded this one. Its own run() owns the refs now,
-          // so leave them alone.
           if (signal.aborted) return null
 
           if (attempt === attempts || !isRetryable(err)) {
@@ -106,8 +91,6 @@ export function useApi<T, A extends unknown[] = []>(
           }
 
           retrying.value = true
-          // 300ms, 600ms, 1200ms — enough to ride out a blip without making a
-          // genuinely dead server feel like a hang.
           await new Promise((resolve) => setTimeout(resolve, backoffMs * 2 ** (attempt - 1)))
           if (signal.aborted) return null
           retrying.value = false
@@ -119,17 +102,6 @@ export function useApi<T, A extends unknown[] = []>(
     }
   }
 
-  /**
-   * Stop waiting for a request the user has given up on.
-   *
-   * Only reads get this. Aborting a write tells the browser to stop listening,
-   * not the server to stop working, so the change may well land anyway — the
-   * same reasoning that keeps writes at attempts: 1. Offering "cancel" there
-   * would be claiming something we cannot deliver.
-   *
-   * The abandoned run settles itself out of the picture: it sees signal.aborted
-   * and returns without touching a ref, so the message set here survives.
-   */
   function cancel() {
     if (!loading.value) return
     controller?.abort()
@@ -139,7 +111,6 @@ export function useApi<T, A extends unknown[] = []>(
       'Stopped waiting for the server. Nothing was changed — try again when you are ready.'
   }
 
-  /** Re-run with the same arguments. This is what every Retry button calls. */
   const retry = () => run(...(lastArgs ?? ([] as unknown as A)))
 
   onScopeDispose(() => {

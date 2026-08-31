@@ -21,8 +21,6 @@ let clearReconnected: ReturnType<typeof setTimeout> | null = null;
 watch(online, async (isOnline, wasOnline) => {
   if (!isOnline || wasOnline !== false) return;
 
-  // Send first, announce after: "back online" while three changes are still
-  // going out would be the wrong half of the story.
   if (queue.pending) await queue.flush();
 
   reconnected.value = true;
@@ -36,11 +34,6 @@ function plural(n: number) {
   return n === 1 ? "change" : "changes";
 }
 
-/**
- * One banner, five things it might need to say. Kept as a single computed so
- * the states cannot overlap — an offline notice sitting under a "back online"
- * one is exactly the sort of double message this app avoids elsewhere.
- */
 const notice = computed(() => {
   if (!online.value) {
     return {
@@ -62,8 +55,6 @@ const notice = computed(() => {
     };
   }
 
-  // Online, but the flush stopped early. This one stays until it is resolved:
-  // unsent work is not something to let scroll past on a four-second timer.
   if (queue.count) {
     return {
       tone: "text-bg-danger",

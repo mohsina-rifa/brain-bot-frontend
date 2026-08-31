@@ -51,13 +51,6 @@ setUnauthorizedHandler(() => {
     })
 })
 
-/**
- * ErrorBoundary catches what is thrown while rendering. What reaches here is the
- * rest — a watcher, an event handler, an async callback — where there is no
- * component to swap out for a recovery screen. Logging it is the honest limit:
- * swallowing it silently would hide real bugs, and there is nothing on screen
- * that could be usefully replaced.
- */
 app.config.errorHandler = (err, _instance, info) => {
   console.error(`[app] unhandled error (${info})`, err)
 }

@@ -7,7 +7,6 @@ withDefaults(
     columns?: number;
     slow?: boolean;
     retrying?: boolean;
-    /** Show a way out once the wait is long. Reads only — see useApi.cancel. */
     cancellable?: boolean;
   }>(),
   {
@@ -53,9 +52,6 @@ const emit = defineEmits<{ cancel: [] }>();
         }}
       </p>
 
-      <!-- Only offered once the wait is long enough to be worth abandoning.
-           A button that appears instantly just invites cancelling a request
-           that was about to succeed. -->
       <BButton
         v-if="cancellable"
         size="sm"

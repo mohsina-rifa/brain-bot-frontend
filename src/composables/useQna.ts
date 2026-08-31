@@ -19,7 +19,6 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   const limit = ref(initialLimit);
   const search = ref("");
 
-  // Reading a list is safe to repeat, so this one retries with backoff.
   const request = useApi<Paginated<Qna>, [QnaListQuery]>(
     (signal, query) =>
       client
@@ -76,7 +75,6 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
 
   const failedAction = ref<"save" | "delete" | null>(null);
 
-  /** The last write was held for the connection rather than lost. */
   const queued = ref(false);
 
   function retryMutation() {
@@ -97,9 +95,6 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     action: "save" | "delete",
     label: string,
   ) {
-    // Being offline is a delay, not a failure. The write is held with the exact
-    // thunk Retry would have run, so the user gets "waiting to send" instead of
-    // a red error about something they cannot fix from here.
     if (queue.enqueueIfOffline(err, label, () => retry().then(Boolean))) {
       queued.value = true;
       return;
