@@ -55,8 +55,11 @@ The seeded admin is **`admin@bs23.com` / `admin23`**.
 
 ### 2.2 Frontend
 
+From the root of this repository (the folder name depends on how you got it —
+`brain-bot-frontend-main` from the submitted archive, `brain-bot-frontend` from
+a `git clone`):
+
 ```bash
-cd brain-bot-frontend-main
 npm install
 npm run dev
 ```
@@ -274,6 +277,10 @@ src/
   stores/
     auth.ts              token, decoded claims, login / logout
     activeBot.ts         the bot the sidebar, playground and settings share
+    writeQueue.ts        writes made offline, replayed on reconnect
+  assets/
+    theme.scss           Bootstrap compiled from source with the theme overrides
+    app.css              focus ring, skip link, spacing scale
   components/            AppShell, SideNav, dialogs, table, chat, skeleton
   views/                 Login, Bots, Qna, Playground, BotSettings
 ```
@@ -285,7 +292,14 @@ src/
 | `npm run dev`     | Dev server on <http://localhost:5173>                  |
 | `npm run build`   | Type-check (`vue-tsc -b`) and build to `dist/`         |
 | `npm run preview` | Serve the production build locally                     |
+| `npm run lint`    | ESLint over `src/` — Vue + TypeScript rules            |
+| `npm run format`  | Prettier over `src/`                                   |
 
-There is no lint script; `noUnusedLocals` and `noUnusedParameters` are enabled
-in `tsconfig`, so a clean `npm run build` also proves there is no unused import
-or variable in the project.
+`noUnusedLocals` and `noUnusedParameters` are also enabled in `tsconfig`, so a
+clean `npm run build` independently proves there is no unused import or
+variable in the project.
+
+`npm run format` is not part of the build and has never been run across the
+tree: the repo predates the Prettier config, so running it would reformat most
+files at once. It is there for anyone who wants it, not a standard I claim the
+existing code already meets.
