@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute, RouterView } from "vue-router";
 import AppShell from "@/components/AppShell.vue";
+import ErrorBoundary from "@/components/ErrorBoundary.vue";
 import { useOnline } from "@/composables/useOnline";
 
 const route = useRoute();
@@ -44,6 +45,8 @@ watch(online, (isOnline, wasOnline) => {
     </template>
   </div>
 
-  <RouterView v-if="isPublic" />
+  <ErrorBoundary v-if="isPublic">
+    <RouterView />
+  </ErrorBoundary>
   <AppShell v-else />
 </template>

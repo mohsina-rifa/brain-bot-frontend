@@ -5,6 +5,7 @@ import { BButton, BOffcanvas, BOrchestrator } from "bootstrap-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import { useActiveBotStore } from "@/stores/activeBot";
 import SideNav from "@/components/SideNav.vue";
+import ErrorBoundary from "@/components/ErrorBoundary.vue";
 
 const auth = useAuthStore();
 const activeBot = useActiveBotStore();
@@ -84,7 +85,11 @@ function onLogout() {
       </nav>
 
       <main id="main-content" class="flex-grow-1" style="min-width: 0">
-        <RouterView />
+        <!-- Inside the shell, not around it: a screen that crashes should leave
+             the header and nav standing, so there is somewhere to go next. -->
+        <ErrorBoundary>
+          <RouterView />
+        </ErrorBoundary>
       </main>
     </div>
 
