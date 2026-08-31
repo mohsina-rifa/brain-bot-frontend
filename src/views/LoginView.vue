@@ -49,7 +49,7 @@ async function onSubmit() {
   <div class="container" style="max-width: 26rem">
     <div class="py-5">
       <h1 class="h3 mb-1">Sign in</h1>
-      <p class="text-body-secondary mb-4">
+      <p class="text-body-secondary mb-3">
         Manage your bots and their knowledge base.
       </p>
 
@@ -90,7 +90,7 @@ async function onSubmit() {
           />
         </BFormGroup>
 
-        <BFormGroup label="Password" label-for="password" class="mb-4">
+        <BFormGroup label="Password" label-for="password" class="mb-3">
           <div class="input-group">
             <BFormInput
               id="password"
@@ -119,7 +119,7 @@ async function onSubmit() {
         <BButton
           type="submit"
           variant="primary"
-          class="w-100"
+          class="w-100 form-actions"
           :disabled="submitting || !email || !password"
         >
           <BSpinner v-if="submitting" small class="me-2" />

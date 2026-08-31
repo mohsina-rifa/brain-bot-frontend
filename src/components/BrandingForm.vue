@@ -109,7 +109,7 @@ function onSubmit() {
       <span>Still saving. The logo is uploading — leave this page open.</span>
     </BAlert>
 
-    <h2 class="h6 text-body-secondary text-uppercase mb-3">Identity</h2>
+    <h2 class="form-section">Identity</h2>
 
     <BFormGroup
       label="Name"
@@ -144,7 +144,7 @@ function onSubmit() {
       />
     </BFormGroup>
 
-    <div class="row g-3 mb-4">
+    <div class="row g-3">
       <div class="col-sm-6">
         <BFormGroup
           label="Colour"
@@ -182,9 +182,7 @@ function onSubmit() {
       </div>
     </div>
 
-    <hr class="my-4" />
-
-    <h2 class="h6 text-body-secondary text-uppercase mb-3">Messages</h2>
+    <h2 class="form-section form-section-divided">Messages</h2>
 
     <BFormGroup
       label="Welcome message"
@@ -225,7 +223,7 @@ function onSubmit() {
     <BFormGroup
       label="Suggestion message"
       label-for="bot-suggestion"
-      class="mb-4"
+      class="mb-3"
       description="Nudges the visitor towards what to ask next."
       :state="fieldErrors?.suggestionMessage ? false : null"
       :invalid-feedback="fieldErrors?.suggestionMessage"
@@ -254,7 +252,7 @@ function onSubmit() {
       v-if="handoverToHuman"
       label="Hand-over message"
       label-for="bot-handover-message"
-      class="mb-4"
+      class="mb-3"
       description="Shown as the bot passes the conversation to a person."
       :state="handoverMessageError ? false : null"
       :invalid-feedback="handoverMessageError"
@@ -269,13 +267,15 @@ function onSubmit() {
       />
     </BFormGroup>
 
-    <BButton
-      type="submit"
-      variant="primary"
-      :disabled="busy || !name.trim() || handoverMessageMissing"
-    >
-      <BSpinner v-if="busy" small class="me-2" />
-      {{ busy ? "Saving…" : "Save changes" }}
-    </BButton>
+    <div class="form-actions">
+      <BButton
+        type="submit"
+        variant="primary"
+        :disabled="busy || !name.trim() || handoverMessageMissing"
+      >
+        <BSpinner v-if="busy" small class="me-2" />
+        {{ busy ? "Saving…" : "Save changes" }}
+      </BButton>
+    </div>
   </BForm>
 </template>
