@@ -66,6 +66,7 @@ const suggestion = computed(
   <div
     class="container-fluid py-4 px-4 d-flex flex-column playground-page"
     style="min-height: 0"
+    :style="activeBot.bot?.color ? { '--bot-accent': activeBot.bot.color } : {}"
   >
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div>
@@ -124,7 +125,7 @@ const suggestion = computed(
 
     <div
       ref="panel"
-      class="border rounded p-3 mb-3 chat-panel"
+      class="p-3 mb-3 chat-panel"
     >
       <template v-if="!messages.length && !pending && !failed">
         <MessageThread
@@ -187,13 +188,19 @@ const suggestion = computed(
 
 <style scoped>
 .chat-panel {
+  border: var(--bs-border-width) solid
+    color-mix(
+      in srgb,
+      var(--bot-accent, var(--bs-border-color)) 35%,
+      var(--bs-border-color)
+    );
+  border-top: 0.1875rem solid var(--bot-accent, var(--bs-border-color));
+  border-radius: var(--bs-border-radius);
   min-height: 24rem;
   max-height: calc(100vh - 22rem);
   overflow-y: auto;
 }
 
-/* A phone has no room for a 24rem panel plus a header and a composer, so the
-   thread gives up height first and the composer stays on screen. */
 @media (max-width: 767.98px) {
   .chat-panel {
     min-height: 12rem;
