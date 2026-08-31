@@ -105,7 +105,7 @@ async function confirmDelete() {
 
     <EmptyState
       v-else-if="!bots.length"
-      icon="robot"
+      illustration="bots"
       title="No bots yet"
       description="Create your first bot to start building a knowledge base."
       action-label="Create bot"

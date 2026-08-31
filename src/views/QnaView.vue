@@ -265,7 +265,7 @@ async function confirmDelete() {
 
     <EmptyState
       v-else-if="!rows.length && search"
-      icon="search"
+      illustration="search"
       :title="`No entries match “${search}”`"
       action-label="Clear search"
       action-variant="outline-secondary"
@@ -277,7 +277,7 @@ async function confirmDelete() {
 
     <EmptyState
       v-else-if="!rows.length"
-      icon="chat-square-text"
+      illustration="qna"
       title="No Q&A entries yet"
       description="This bot has nothing to answer from. Add a question and answer to start building its knowledge base."
       action-label="Add entry"
