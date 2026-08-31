@@ -3,6 +3,7 @@ import { ref, toRef, watch } from "vue";
 import { useToast } from "bootstrap-vue-next";
 import client, { isSessionEnded, toFieldErrors, toMessage } from "@/api/client";
 import { useActiveBotStore } from "@/stores/activeBot";
+import { useWriteQueueStore } from "@/stores/writeQueue";
 import { useSlowFlag } from "@/composables/useSlowFlag";
 import BrandingForm from "@/components/BrandingForm.vue";
 import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
@@ -12,6 +13,7 @@ import type { Bot } from "@/types/api";
 const props = defineProps<{ id: string }>();
 
 const activeBot = useActiveBotStore();
+const queue = useWriteQueueStore();
 const toast = useToast();
 
 const saving = ref(false);
@@ -33,7 +35,11 @@ watch(
   { immediate: true },
 );
 
-async function save(values: Record<string, string>) {
+/**
+ * Returns whether the branding actually landed, so the write queue can tell a
+ * replay that worked from one that has to stay queued.
+ */
+async function save(values: Record<string, string>): Promise<boolean> {
   lastValues = values;
   saving.value = true;
   error.value = null;
@@ -54,10 +60,26 @@ async function save(values: Record<string, string>) {
       value: 3000,
       pos: "bottom-end",
     });
+    return true;
   } catch (err) {
+    // Offline: held with the values as typed and sent on reconnect. No red
+    // error, because nothing here is wrong and nothing needs re-entering.
+    if (queue.enqueueIfOffline(err, "Branding changes", () => save(values))) {
+      toast.create({
+        title: "Branding waiting to send",
+        body: "You are offline. It will be saved when the connection is back.",
+        variant: "warning",
+        value: 5000,
+        pos: "bottom-end",
+      });
+      return false;
+    }
+
     error.value = toMessage(err);
     fieldErrors.value = toFieldErrors(err);
-    if (isSessionEnded()) return;
+    // The session ended and the app is already navigating to login; a red toast
+    // about branding would arrive there with nothing to point at.
+    if (isSessionEnded()) return false;
     toast.create({
       title: "Could not save branding",
       body: error.value ?? undefined,
@@ -65,6 +87,7 @@ async function save(values: Record<string, string>) {
       value: 6000,
       pos: "bottom-end",
     });
+    return false;
   } finally {
     saving.value = false;
     stopSlow();
@@ -72,7 +95,7 @@ async function save(values: Record<string, string>) {
 }
 
 function retry() {
-  if (lastValues) save(lastValues);
+  if (lastValues) void save(lastValues);
 }
 </script>
 

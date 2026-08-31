@@ -12,6 +12,7 @@ import router from './router'
 import { setUnauthorizedHandler, setSessionEnded } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useActiveBotStore } from '@/stores/activeBot'
+import { useWriteQueueStore } from '@/stores/writeQueue'
 
 const app = createApp(App)
 
@@ -35,6 +36,7 @@ setUnauthorizedHandler(() => {
   setSessionEnded(true)
 
   useActiveBotStore().clear()
+  useWriteQueueStore().clear()
 
   void router
     .push({

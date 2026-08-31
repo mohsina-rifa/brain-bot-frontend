@@ -50,6 +50,7 @@ const {
   mutationError,
   fieldErrors,
   failedAction,
+  queued,
   retryMutation,
   clearMutationError,
 } = useQna(toRef(props, "id"));
@@ -121,6 +122,16 @@ function notifySaved(title: string) {
   toast.create({ title, variant: "success", value: 3000, pos: "bottom-end" });
 }
 
+function notifyQueued(title: string) {
+  toast.create({
+    title,
+    body: "You are offline. It will be sent when the connection is back.",
+    variant: "warning",
+    value: 5000,
+    pos: "bottom-end",
+  });
+}
+
 function notifyFailed(title: string) {
   if (isSessionEnded()) return;
   toast.create({
@@ -150,6 +161,11 @@ async function onSubmit(question: string, answer: string) {
   if (saved) {
     showForm.value = false;
     notifySaved(wasEdit ? "Entry updated" : "Entry added");
+  } else if (queued.value) {
+    // Held, not lost. Keeping the dialog open would ask the user to sit and
+    // watch a form they cannot submit until the connection returns.
+    showForm.value = false;
+    notifyQueued(wasEdit ? "Edit waiting to send" : "Entry waiting to send");
   } else {
     notifyFailed(wasEdit ? "Could not update entry" : "Could not add entry");
   }
@@ -160,6 +176,14 @@ async function onRetry() {
 
   const result = await retryMutation();
   if (result === null || result === false) {
+    if (queued.value) {
+      showForm.value = false;
+      pendingDelete.value = null;
+      notifyQueued(
+        wasDelete ? "Deletion waiting to send" : "Change waiting to send",
+      );
+      return;
+    }
     notifyFailed(wasDelete ? "Still could not delete" : "Still could not save");
     return;
   }
@@ -185,6 +209,9 @@ async function confirmDelete() {
   if (ok) {
     pendingDelete.value = null;
     notifySaved("Entry deleted");
+  } else if (queued.value) {
+    pendingDelete.value = null;
+    notifyQueued("Deletion waiting to send");
   } else {
     notifyFailed("Could not delete entry");
   }

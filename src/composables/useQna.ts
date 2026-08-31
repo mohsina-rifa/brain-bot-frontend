@@ -2,6 +2,7 @@ import { computed, ref, type Ref } from "vue";
 import client, { toFieldErrors, toMessage } from "@/api/client";
 import { useApi } from "@/composables/useApi";
 import { useSlowFlag } from "@/composables/useSlowFlag";
+import { useWriteQueueStore } from "@/stores/writeQueue";
 import type { Paginated, Qna } from "@/types/api";
 
 interface QnaListQuery {
@@ -12,6 +13,8 @@ interface QnaListQuery {
 }
 
 export function useQna(botId: Ref<string>, initialLimit = 10) {
+  const queue = useWriteQueueStore();
+
   const page = ref(1);
   const limit = ref(initialLimit);
   const search = ref("");
@@ -73,6 +76,9 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
 
   const failedAction = ref<"save" | "delete" | null>(null);
 
+  /** The last write was held for the connection rather than lost. */
+  const queued = ref(false);
+
   function retryMutation() {
     return lastFailed ? lastFailed() : Promise.resolve(null);
   }
@@ -81,6 +87,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     mutationError.value = null;
     fieldErrors.value = {};
     failedAction.value = null;
+    queued.value = false;
     lastFailed = null;
   }
 
@@ -88,7 +95,16 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     err: unknown,
     retry: () => Promise<unknown>,
     action: "save" | "delete",
+    label: string,
   ) {
+    // Being offline is a delay, not a failure. The write is held with the exact
+    // thunk Retry would have run, so the user gets "waiting to send" instead of
+    // a red error about something they cannot fix from here.
+    if (queue.enqueueIfOffline(err, label, () => retry().then(Boolean))) {
+      queued.value = true;
+      return;
+    }
+
     mutationError.value = toMessage(err);
     fieldErrors.value = toFieldErrors(err);
     failedAction.value = action;
@@ -108,7 +124,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       await load();
       return res.data.data;
     } catch (err) {
-      recordFailure(err, () => create(question, answer), "save");
+      recordFailure(err, () => create(question, answer), "save", "New Q&A entry");
       return null;
     } finally {
       saving.value = false;
@@ -133,7 +149,12 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       await load();
       return res.data.data;
     } catch (err) {
-      recordFailure(err, () => update(id, question, answer), "save");
+      recordFailure(
+        err,
+        () => update(id, question, answer),
+        "save",
+        "Q&A entry edit",
+      );
       return null;
     } finally {
       saving.value = false;
@@ -152,7 +173,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       if (!rows.value.length && page.value > 1) await goTo(page.value - 1);
       return true;
     } catch (err) {
-      recordFailure(err, () => remove(id), "delete");
+      recordFailure(err, () => remove(id), "delete", "Q&A entry deletion");
       return false;
     } finally {
       pendingId.value = null;
@@ -208,6 +229,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     mutationError,
     fieldErrors,
     failedAction,
+    queued,
     retryMutation,
     clearMutationError,
   };

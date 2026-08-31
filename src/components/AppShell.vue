@@ -4,11 +4,13 @@ import { useRoute, useRouter, RouterLink, RouterView } from "vue-router";
 import { BButton, BOffcanvas, BOrchestrator } from "bootstrap-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import { useActiveBotStore } from "@/stores/activeBot";
+import { useWriteQueueStore } from "@/stores/writeQueue";
 import SideNav from "@/components/SideNav.vue";
 import ErrorBoundary from "@/components/ErrorBoundary.vue";
 
 const auth = useAuthStore();
 const activeBot = useActiveBotStore();
+const queue = useWriteQueueStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -34,6 +36,9 @@ watch(() => route.fullPath, () => (showNav.value = false));
 function onLogout() {
   auth.logout();
   activeBot.clear();
+  // Same session boundary the 401 handler enforces: unsent writes belong to the
+  // session that made them and must not replay under the next one.
+  queue.clear();
   router.push({ name: "login" });
 }
 </script>
