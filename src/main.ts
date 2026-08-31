@@ -51,6 +51,11 @@ setUnauthorizedHandler(() => {
     })
 })
 
+// ErrorBoundary returns false from onErrorCaptured, so it stops propagation and
+// this never runs for anything it catches. What reaches here is what has no UI
+// left to show it: the shell, the header, the sidebar. Logging is the only
+// recourse — the alternative is a blank page with no trace of why. Deliberately
+// kept through the cleanup pass.
 app.config.errorHandler = (err, _instance, info) => {
   console.error(`[app] unhandled error (${info})`, err)
 }
