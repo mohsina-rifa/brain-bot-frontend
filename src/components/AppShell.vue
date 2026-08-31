@@ -78,8 +78,7 @@ function onLogout() {
 
     <div class="d-flex flex-grow-1" style="min-width: 0">
       <nav
-        class="border-end bg-body-tertiary p-3 d-none d-md-block flex-shrink-0"
-        style="width: 15rem"
+        class="app-sidebar p-3 d-none d-md-block flex-shrink-0"
         aria-label="Main"
       >
         <SideNav :bot-id="botId" :bot-name="activeBot.bot?.name" />
@@ -99,3 +98,11 @@ function onLogout() {
     <BOrchestrator />
   </div>
 </template>
+
+<style scoped>
+.app-sidebar {
+  width: 15.5rem;
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-body-bg));
+  border-right: 1px solid var(--bs-border-color);
+}
+</style>
