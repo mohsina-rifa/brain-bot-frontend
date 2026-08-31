@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, toRef, watch } from "vue";
-import { BSpinner, useToast } from "bootstrap-vue-next";
+import { useToast } from "bootstrap-vue-next";
 import client, { toFieldErrors, toMessage } from "@/api/client";
 import { useActiveBotStore } from "@/stores/activeBot";
 import BrandingForm from "@/components/BrandingForm.vue";
+import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
+import ErrorState from "@/components/ErrorState.vue";
 import type { Bot } from "@/types/api";
 
 const props = defineProps<{ id: string }>();
@@ -69,9 +71,24 @@ function retry() {
       </p>
     </div>
 
-    <div v-if="!activeBot.bot" class="text-center py-5">
-      <BSpinner />
-    </div>
+    <LoadingSkeleton
+      v-if="activeBot.loading && !activeBot.bot"
+      :rows="6"
+      :columns="1"
+      :slow="activeBot.slow"
+      :retrying="activeBot.retrying"
+      style="max-width: 42rem"
+    />
+
+    <ErrorState
+      v-else-if="!activeBot.bot"
+      :message="
+        activeBot.error ??
+        'This bot could not be loaded. Try again, or go back to the bots list.'
+      "
+      :busy="activeBot.loading"
+      @retry="activeBot.retry"
+    />
 
     <div v-else style="max-width: 42rem">
       <BrandingForm

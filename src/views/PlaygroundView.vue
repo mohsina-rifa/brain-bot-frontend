@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef, watch } from "vue";
-import { BAlert, BButton } from "bootstrap-vue-next";
+import { BAlert, BButton, BSpinner } from "bootstrap-vue-next";
 import { useConversation } from "@/composables/useConversation";
 import { useActiveBotStore } from "@/stores/activeBot";
 import MessageThread from "@/components/MessageThread.vue";
@@ -83,6 +83,7 @@ const suggestion = computed(
             {{ activeBot.bot?.name ?? "Bot" }} · answers come from this bot's
             knowledge base
           </span>
+          <BSpinner v-if="activeBot.loading" small />
           <span
             v-if="activeBot.bot?.status === 'inactive'"
             class="badge text-bg-secondary"
@@ -99,6 +100,27 @@ const suggestion = computed(
         <i class="bi bi-arrow-counterclockwise me-1" />Reset
       </BButton>
     </div>
+
+    <BAlert
+      v-if="activeBot.error"
+      :model-value="true"
+      variant="warning"
+      class="mb-3 d-flex justify-content-between align-items-center gap-3"
+    >
+      <span>
+        {{ activeBot.error }} You can still chat, but this bot's welcome message
+        and branding are not showing.
+      </span>
+      <BButton
+        variant="outline-secondary"
+        size="sm"
+        class="flex-shrink-0"
+        :disabled="activeBot.loading"
+        @click="activeBot.retry"
+      >
+        Retry
+      </BButton>
+    </BAlert>
 
     <div
       ref="panel"
