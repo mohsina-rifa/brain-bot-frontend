@@ -1,0 +1,30 @@
+// The project's theme, compiled from Bootstrap's Sass source.
+//
+// This replaces the precompiled bootstrap.min.css. That matters: the shipped
+// stylesheet bakes $primary in as literal hex in places like .btn-primary, so
+// overriding --bs-primary at runtime cannot retheme it. Compiling from source
+// is the only way the two variables below reach every component at once.
+
+@import "bootstrap/scss/functions";
+
+// --- Overrides -------------------------------------------------------------
+//
+// A deep teal rather than Bootstrap blue. Besides not being the default, it
+// clears 6.0:1 against white where #0d6efd only manages 4.50:1 — the stock
+// primary button sits right on the AA boundary.
+$primary: #0f6f68;
+
+// Bootstrap's 0.375rem is the single most recognisable thing about an
+// unstyled Bootstrap page. 0.5rem is softer without going pill-shaped, and
+// the sm/lg steps are kept proportional so the scale stays coherent.
+$border-radius: 0.5rem;
+$border-radius-sm: 0.375rem;
+$border-radius-lg: 0.75rem;
+
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+@import "bootstrap/scss/bootstrap";
