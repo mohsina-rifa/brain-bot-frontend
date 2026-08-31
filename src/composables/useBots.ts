@@ -37,13 +37,9 @@ export function useBots(limit = 10) {
   const removing = ref<string | null>(null);
   const removeError = ref<string | null>(null);
 
-  // Held so the alert's Retry button re-runs the delete that actually failed.
-  let lastRemoved: string | null = null;
-
   async function remove(id: string): Promise<boolean> {
     removing.value = id;
     removeError.value = null;
-    lastRemoved = id;
     try {
       await client.delete(`/bots/${id}`);
       await load();
@@ -55,10 +51,6 @@ export function useBots(limit = 10) {
     } finally {
       removing.value = null;
     }
-  }
-
-  function retryRemove(): Promise<boolean> {
-    return lastRemoved ? remove(lastRemoved) : Promise.resolve(false);
   }
 
   return {
@@ -76,7 +68,6 @@ export function useBots(limit = 10) {
     goTo,
     retry: request.retry,
     remove,
-    retryRemove,
     removing,
     removeError,
   };

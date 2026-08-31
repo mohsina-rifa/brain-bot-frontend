@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import {
   BModal,
   BForm,
@@ -25,6 +25,10 @@ const status = ref<"active" | "inactive">("active");
 const create = useApi<Bot, [FormData]>((signal, form) =>
   client.post<Bot>("/bots", form, { signal }).then((r) => r.data),
 );
+
+watch(show, (open) => {
+  if (!open) create.error.value = null;
+});
 
 function reset() {
   name.value = "";

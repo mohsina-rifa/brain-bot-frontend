@@ -25,7 +25,6 @@ const {
   goTo,
   retry,
   remove,
-  retryRemove,
   removing,
   removeError,
 } = useBots();
@@ -49,6 +48,11 @@ function open(bot: Bot) {
   router.push(`/bots/${bot._id}/qna`);
 }
 
+function onRequestDelete(bot: Bot) {
+  removeError.value = null;
+  pendingDelete.value = bot;
+}
+
 async function confirmDelete() {
   const bot = pendingDelete.value;
   if (!bot) return;
@@ -58,11 +62,6 @@ async function confirmDelete() {
 
   if (activeBot.bot?._id === bot._id) activeBot.clear();
   pendingDelete.value = null;
-}
-
-async function onRetryDelete() {
-  const ok = await retryRemove();
-  if (ok) pendingDelete.value = null;
 }
 </script>
 
@@ -84,32 +83,6 @@ async function onRetryDelete() {
         <i class="bi bi-plus-lg me-1" />Create bot
       </BButton>
     </div>
-
-    <BAlert
-      v-if="removeError"
-      :model-value="true"
-      variant="danger"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
-    >
-      <span>{{ removeError }}</span>
-      <span class="d-flex gap-2 flex-shrink-0">
-        <BButton
-          variant="outline-danger"
-          size="sm"
-          :disabled="removing !== null"
-          @click="onRetryDelete"
-        >
-          Retry delete
-        </BButton>
-        <BButton
-          variant="outline-secondary"
-          size="sm"
-          @click="removeError = null"
-        >
-          Dismiss
-        </BButton>
-      </span>
-    </BAlert>
 
     <LoadingSkeleton
       v-if="loading && !hasLoaded"
@@ -200,7 +173,7 @@ async function onRetryDelete() {
                   variant="outline-danger"
                   class="ms-2"
                   :disabled="removing === bot._id"
-                  @click="pendingDelete = bot"
+                  @click="onRequestDelete(bot)"
                 >
                   <BSpinner v-if="removing === bot._id" small />
                   <span v-else>Delete</span>
@@ -248,11 +221,32 @@ async function onRetryDelete() {
       :busy="removing !== null"
       @update:model-value="
         (v: boolean) => {
-          if (!v) pendingDelete = null;
+          if (!v) {
+            pendingDelete = null;
+            removeError = null;
+          }
         }
       "
       @confirm="confirmDelete"
     >
+      <BAlert
+        v-if="removeError"
+        :model-value="true"
+        variant="danger"
+        class="mb-3 d-flex justify-content-between align-items-center gap-3"
+      >
+        <span>{{ removeError }}</span>
+        <BButton
+          variant="outline-danger"
+          size="sm"
+          class="flex-shrink-0"
+          :disabled="removing !== null"
+          @click="confirmDelete"
+        >
+          Retry
+        </BButton>
+      </BAlert>
+
       Delete <strong>{{ pendingDelete?.name }}</strong
       >? Its Q&amp;A content and conversations will no longer be reachable. This
       cannot be undone.

@@ -19,7 +19,16 @@ const fieldErrors = ref<Record<string, string>>({});
 
 let lastValues: Record<string, string> | null = null;
 
-watch(toRef(props, "id"), (id) => activeBot.ensure(id), { immediate: true });
+watch(
+  toRef(props, "id"),
+  (id) => {
+    error.value = null;
+    fieldErrors.value = {};
+    lastValues = null;
+    activeBot.ensure(id);
+  },
+  { immediate: true },
+);
 
 async function save(values: Record<string, string>) {
   lastValues = values;

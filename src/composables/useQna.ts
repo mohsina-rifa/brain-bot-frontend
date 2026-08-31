@@ -67,11 +67,11 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
 
   const fieldErrors = ref<Record<string, string>>({});
 
-  // Creating an entry has to embed the answer before it returns, which is the
-  // slowest thing in the app. Warn rather than let it look frozen.
   const { slow: slowSave, start: startSlow, stop: stopSlow } = useSlowFlag();
 
   let lastFailed: (() => Promise<unknown>) | null = null;
+
+  const failedAction = ref<"save" | "delete" | null>(null);
 
   function retryMutation() {
     return lastFailed ? lastFailed() : Promise.resolve(null);
@@ -80,14 +80,18 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
   function clearMutationError() {
     mutationError.value = null;
     fieldErrors.value = {};
+    failedAction.value = null;
     lastFailed = null;
   }
 
-  function recordFailure(err: unknown, retry: () => Promise<unknown>) {
+  function recordFailure(
+    err: unknown,
+    retry: () => Promise<unknown>,
+    action: "save" | "delete",
+  ) {
     mutationError.value = toMessage(err);
     fieldErrors.value = toFieldErrors(err);
-    // Every failed mutation leaves behind the exact call that failed, so the
-    // Retry button re-runs the real thing instead of being decorative.
+    failedAction.value = action;
     lastFailed = retry;
   }
 
@@ -104,7 +108,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       await load();
       return res.data.data;
     } catch (err) {
-      recordFailure(err, () => create(question, answer));
+      recordFailure(err, () => create(question, answer), "save");
       return null;
     } finally {
       saving.value = false;
@@ -129,7 +133,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       await load();
       return res.data.data;
     } catch (err) {
-      recordFailure(err, () => update(id, question, answer));
+      recordFailure(err, () => update(id, question, answer), "save");
       return null;
     } finally {
       saving.value = false;
@@ -148,7 +152,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
       if (!rows.value.length && page.value > 1) await goTo(page.value - 1);
       return true;
     } catch (err) {
-      recordFailure(err, () => remove(id));
+      recordFailure(err, () => remove(id), "delete");
       return false;
     } finally {
       pendingId.value = null;
@@ -173,7 +177,6 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
         ) ?? null
       );
     } catch {
-      // A duplicate check that cannot run must not block the save.
       return null;
     }
   }
@@ -204,6 +207,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     pendingId,
     mutationError,
     fieldErrors,
+    failedAction,
     retryMutation,
     clearMutationError,
   };

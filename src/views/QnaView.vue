@@ -48,6 +48,7 @@ const {
   pendingId,
   mutationError,
   fieldErrors,
+  failedAction,
   retryMutation,
   clearMutationError,
 } = useQna(toRef(props, "id"));
@@ -153,14 +154,16 @@ async function onSubmit(question: string, answer: string) {
 }
 
 async function onRetry() {
+  const wasDelete = failedAction.value === "delete";
+
   const result = await retryMutation();
   if (result === null || result === false) {
-    notifyFailed("Still could not save");
+    notifyFailed(wasDelete ? "Still could not delete" : "Still could not save");
     return;
   }
   showForm.value = false;
   pendingDelete.value = null;
-  notifySaved("Saved");
+  notifySaved(wasDelete ? "Entry deleted" : "Entry saved");
 }
 
 // --- delete ----------------------------------------------------------------
@@ -168,7 +171,6 @@ async function onRetry() {
 const pendingDelete = ref<Qna | null>(null);
 
 function onRequestDelete(row: Qna) {
-  // Never open the dialog carrying the previous attempt's error.
   clearMutationError();
   pendingDelete.value = row;
 }

@@ -25,9 +25,9 @@ const emit = defineEmits<{ confirm: [] }>();
 
 <template>
   <BModal v-model="show" :title="title" :no-close-on-backdrop="busy">
-    <p class="mb-0">
+    <div class="mb-0">
       <slot>{{ message }}</slot>
-    </p>
+    </div>
 
     <template #footer>
       <BButton
