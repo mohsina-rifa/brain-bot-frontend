@@ -42,7 +42,7 @@ const botBubble = computed(() =>
         style="max-width: min(42rem, 85%); white-space: pre-wrap"
         :class="
           message.role === 'user'
-            ? 'text-bg-primary'
+            ? 'chat-bubble-user'
             : 'bg-body-tertiary border'
         "
         :style="message.role === 'bot' ? botBubble : undefined"
@@ -88,7 +88,7 @@ const botBubble = computed(() =>
 
     <div v-if="pending" class="d-flex justify-content-end">
       <div
-        class="px-3 py-2 rounded-3 shadow-sm text-bg-primary opacity-75"
+        class="px-3 py-2 rounded-3 shadow-sm chat-bubble-user opacity-75"
         style="max-width: min(42rem, 80%); white-space: pre-wrap"
       >
         <div class="small fw-semibold mb-1 opacity-75">You</div>
@@ -127,3 +127,10 @@ const botBubble = computed(() =>
     </div>
   </div>
 </template>
+
+<style scoped>
+.chat-bubble-user {
+  background: color-mix(in srgb, var(--bs-emphasis-color) 88%, transparent);
+  color: var(--bs-body-bg);
+}
+</style>

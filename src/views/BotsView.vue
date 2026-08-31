@@ -134,7 +134,7 @@ async function confirmDelete() {
               <td>
                 <button
                   type="button"
-                  class="btn btn-link p-0 fw-semibold text-decoration-none"
+                  class="btn btn-link p-0 fw-semibold bot-name-link"
                   @click="open(bot)"
                 >
                   <span

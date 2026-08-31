@@ -49,3 +49,14 @@ th {
 .form-actions {
   margin-top: 2rem;
 }
+
+.bot-name-link {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-hover-color: var(--bs-emphasis-color);
+  --bs-btn-active-color: var(--bs-emphasis-color);
+  text-decoration: none;
+}
+
+.bot-name-link:hover {
+  text-decoration: underline;
+}
