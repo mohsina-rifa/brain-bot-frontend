@@ -73,8 +73,7 @@ cp .env.example .env
 
 | Variable        | Default        | Meaning                                                   |
 | --------------- | -------------- | --------------------------------------------------------- |
-| `VITE_API_URL`  | *(unset)*      | Unset uses the Vite dev proxy: `/api` → `localhost:4040`.  |
-|                 |                | Set an absolute URL when the backend is somewhere else.    |
+| `VITE_API_URL`  | *(unset)*      | Unset uses the Vite dev proxy: `/api` → `localhost:4040`. Set an absolute URL when the backend is somewhere else. |
 
 No secret is needed by, or committed in, this repo. The Gemini key lives only in
 the backend's `.env`, which is git-ignored.
