@@ -16,6 +16,7 @@ import type { Bot } from "@/types/api";
 const props = defineProps<{
   bot: Bot | null;
   busy?: boolean;
+  slow?: boolean;
   error?: string | null;
   fieldErrors?: Record<string, string>;
 }>();
@@ -96,6 +97,16 @@ function onSubmit() {
       >
         Retry
       </BButton>
+    </BAlert>
+
+    <BAlert
+      v-if="busy && slow"
+      :model-value="true"
+      variant="info"
+      class="mb-3 d-flex align-items-center gap-2"
+    >
+      <BSpinner small />
+      <span>Still saving. The logo is uploading — leave this page open.</span>
     </BAlert>
 
     <h2 class="h6 text-body-secondary text-uppercase mb-3">Identity</h2>

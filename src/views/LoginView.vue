@@ -11,6 +11,7 @@ import {
 } from "bootstrap-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import { toMessage } from "@/api/client";
+import { useSlowFlag } from "@/composables/useSlowFlag";
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -22,13 +23,14 @@ const showPassword = ref(false);
 const submitting = ref(false);
 const error = ref<string | null>(null);
 
-// main.ts sends the user here with reason=expired when a request comes back 401,
-// so the bounce arrives with an explanation instead of looking like a glitch.
+const { slow, start: startSlow, stop: stopSlow } = useSlowFlag();
+
 const expired = computed(() => route.query.reason === "expired");
 
 async function onSubmit() {
   error.value = null;
   submitting.value = true;
+  startSlow();
   try {
     await auth.login(email.value, password.value);
     const next =
@@ -38,6 +40,7 @@ async function onSubmit() {
     error.value = toMessage(err);
   } finally {
     submitting.value = false;
+    stopSlow();
   }
 }
 </script>
@@ -61,6 +64,17 @@ async function onSubmit() {
 
       <BAlert v-if="error" :model-value="true" variant="danger" class="mb-3">
         {{ error }}
+      </BAlert>
+
+      <BAlert
+        v-if="submitting && slow"
+        :model-value="true"
+        variant="info"
+        class="mb-3 d-flex align-items-center gap-2"
+      >
+        <BSpinner small />
+        <span>Still signing in. The server may be starting up — give it a
+          moment.</span>
       </BAlert>
 
       <BForm novalidate @submit.prevent="onSubmit">

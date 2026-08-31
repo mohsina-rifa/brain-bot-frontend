@@ -331,6 +331,7 @@ async function confirmDelete() {
       title="Delete entry"
       confirm-label="Delete entry"
       :busy="pendingId !== null"
+      :slow="slowSave"
       @update:model-value="(v: boolean) => { if (!v) pendingDelete = null }"
       @confirm="confirmDelete"
     >

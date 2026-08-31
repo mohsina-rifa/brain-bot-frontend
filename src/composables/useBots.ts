@@ -1,13 +1,13 @@
 import { computed, ref } from "vue";
 import client, { toMessage } from "@/api/client";
 import { useApi } from "@/composables/useApi";
+import { useSlowFlag } from "@/composables/useSlowFlag";
 import type { Bot, ListQuery, Paginated } from "@/types/api";
 
 export function useBots(limit = 10) {
   const page = ref(1);
   const search = ref("");
 
-  // Reading a list is safe to repeat, so this one retries with backoff.
   const request = useApi<Paginated<Bot>, [ListQuery]>(
     (signal, query) =>
       client
@@ -37,9 +37,16 @@ export function useBots(limit = 10) {
   const removing = ref<string | null>(null);
   const removeError = ref<string | null>(null);
 
+  const {
+    slow: slowRemove,
+    start: startSlowRemove,
+    stop: stopSlowRemove,
+  } = useSlowFlag();
+
   async function remove(id: string): Promise<boolean> {
     removing.value = id;
     removeError.value = null;
+    startSlowRemove();
     try {
       await client.delete(`/bots/${id}`);
       await load();
@@ -50,6 +57,7 @@ export function useBots(limit = 10) {
       return false;
     } finally {
       removing.value = null;
+      stopSlowRemove();
     }
   }
 
@@ -70,5 +78,6 @@ export function useBots(limit = 10) {
     remove,
     removing,
     removeError,
+    slowRemove,
   };
 }

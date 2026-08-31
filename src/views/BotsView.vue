@@ -27,6 +27,7 @@ const {
   remove,
   removing,
   removeError,
+  slowRemove,
 } = useBots();
 
 const router = useRouter();
@@ -219,6 +220,7 @@ async function confirmDelete() {
       title="Delete bot"
       confirm-label="Delete bot"
       :busy="removing !== null"
+      :slow="slowRemove"
       @update:model-value="
         (v: boolean) => {
           if (!v) {

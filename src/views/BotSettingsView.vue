@@ -3,6 +3,7 @@ import { ref, toRef, watch } from "vue";
 import { useToast } from "bootstrap-vue-next";
 import client, { toFieldErrors, toMessage } from "@/api/client";
 import { useActiveBotStore } from "@/stores/activeBot";
+import { useSlowFlag } from "@/composables/useSlowFlag";
 import BrandingForm from "@/components/BrandingForm.vue";
 import LoadingSkeleton from "@/components/LoadingSkeleton.vue";
 import ErrorState from "@/components/ErrorState.vue";
@@ -16,6 +17,8 @@ const toast = useToast();
 const saving = ref(false);
 const error = ref<string | null>(null);
 const fieldErrors = ref<Record<string, string>>({});
+
+const { slow: slowSave, start: startSlow, stop: stopSlow } = useSlowFlag();
 
 let lastValues: Record<string, string> | null = null;
 
@@ -35,6 +38,7 @@ async function save(values: Record<string, string>) {
   saving.value = true;
   error.value = null;
   fieldErrors.value = {};
+  startSlow();
 
   try {
     const form = new FormData();
@@ -62,6 +66,7 @@ async function save(values: Record<string, string>) {
     });
   } finally {
     saving.value = false;
+    stopSlow();
   }
 }
 
@@ -103,6 +108,7 @@ function retry() {
       <BrandingForm
         :bot="activeBot.bot"
         :busy="saving"
+        :slow="slowSave"
         :error="error"
         :field-errors="fieldErrors"
         @save="save"
