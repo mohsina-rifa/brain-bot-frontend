@@ -58,5 +58,6 @@ export const useActiveBotStore = defineStore("activeBot", () => {
     clear,
     ensure,
     retry,
+    cancel: request.cancel,
   };
 });

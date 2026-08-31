@@ -24,6 +24,7 @@ const {
   load,
   goTo,
   retry,
+  cancel,
   remove,
   removing,
   removeError,
@@ -91,6 +92,8 @@ async function confirmDelete() {
       :columns="4"
       :slow="slow"
       :retrying="retrying"
+      cancellable
+      @cancel="cancel"
     />
 
     <ErrorState

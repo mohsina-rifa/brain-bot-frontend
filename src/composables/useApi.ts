@@ -29,6 +29,8 @@ export interface UseApi<T, A extends unknown[]> {
   retrying: Ref<boolean>
   run: (...args: A) => Promise<T | null>
   retry: () => Promise<T | null>
+  /** Abandon the in-flight request. Reads only — see cancel() below. */
+  cancel: () => void
 }
 
 /**
@@ -117,6 +119,26 @@ export function useApi<T, A extends unknown[] = []>(
     }
   }
 
+  /**
+   * Stop waiting for a request the user has given up on.
+   *
+   * Only reads get this. Aborting a write tells the browser to stop listening,
+   * not the server to stop working, so the change may well land anyway — the
+   * same reasoning that keeps writes at attempts: 1. Offering "cancel" there
+   * would be claiming something we cannot deliver.
+   *
+   * The abandoned run settles itself out of the picture: it sees signal.aborted
+   * and returns without touching a ref, so the message set here survives.
+   */
+  function cancel() {
+    if (!loading.value) return
+    controller?.abort()
+    controller = null
+    settle()
+    error.value =
+      'Stopped waiting for the server. Nothing was changed — try again when you are ready.'
+  }
+
   /** Re-run with the same arguments. This is what every Retry button calls. */
   const retry = () => run(...(lastArgs ?? ([] as unknown as A)))
 
@@ -127,5 +149,5 @@ export function useApi<T, A extends unknown[] = []>(
 
   if (immediate) void run(...([] as unknown as A))
 
-  return { data, loading, error, slow, retrying, run, retry }
+  return { data, loading, error, slow, retrying, run, retry, cancel }
 }

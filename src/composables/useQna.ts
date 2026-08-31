@@ -219,6 +219,7 @@ export function useQna(botId: Ref<string>, initialLimit = 10) {
     setLimit,
     setSearch,
     retry: request.retry,
+    cancel: request.cancel,
     create,
     update,
     remove,

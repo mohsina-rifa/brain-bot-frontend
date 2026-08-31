@@ -1,13 +1,25 @@
 <script setup lang="ts">
+import { BButton } from "bootstrap-vue-next";
+
 withDefaults(
   defineProps<{
     rows?: number;
     columns?: number;
     slow?: boolean;
     retrying?: boolean;
+    /** Show a way out once the wait is long. Reads only — see useApi.cancel. */
+    cancellable?: boolean;
   }>(),
-  { rows: 5, columns: 4, slow: false, retrying: false },
+  {
+    rows: 5,
+    columns: 4,
+    slow: false,
+    retrying: false,
+    cancellable: false,
+  },
 );
+
+const emit = defineEmits<{ cancel: [] }>();
 </script>
 
 <template>
@@ -28,18 +40,32 @@ withDefaults(
       </div>
     </div>
 
-    <p
-      v-if="slow"
-      class="text-body-secondary small mt-3 mb-0 text-center"
-      role="status"
-      aria-live="polite"
-    >
-      {{
-        retrying
-          ? "That did not go through. Trying again…"
-          : "Still working — the server is taking longer than usual."
-      }}
-    </p>
+    <div v-if="slow" class="text-center mt-3">
+      <p
+        class="text-body-secondary small mb-0"
+        role="status"
+        aria-live="polite"
+      >
+        {{
+          retrying
+            ? "That did not go through. Trying again…"
+            : "Still working — the server is taking longer than usual."
+        }}
+      </p>
+
+      <!-- Only offered once the wait is long enough to be worth abandoning.
+           A button that appears instantly just invites cancelling a request
+           that was about to succeed. -->
+      <BButton
+        v-if="cancellable"
+        size="sm"
+        variant="outline-secondary"
+        class="mt-2"
+        @click="emit('cancel')"
+      >
+        Stop waiting
+      </BButton>
+    </div>
 
     <span class="visually-hidden" role="status">Loading</span>
   </div>

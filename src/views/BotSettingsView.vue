@@ -115,7 +115,9 @@ function retry() {
       :columns="1"
       :slow="activeBot.slow"
       :retrying="activeBot.retrying"
+      cancellable
       style="max-width: 42rem"
+      @cancel="activeBot.cancel"
     />
 
     <ErrorState

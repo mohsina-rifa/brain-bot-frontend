@@ -40,6 +40,7 @@ const {
   setSearch,
   search,
   retry,
+  cancel,
   create,
   update,
   remove,
@@ -253,6 +254,8 @@ async function confirmDelete() {
       :columns="3"
       :slow="slow"
       :retrying="retrying"
+      cancellable
+      @cancel="cancel"
     />
 
     <ErrorState

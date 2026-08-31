@@ -75,6 +75,7 @@ export function useBots(limit = 10) {
     load,
     goTo,
     retry: request.retry,
+    cancel: request.cancel,
     remove,
     removing,
     removeError,
