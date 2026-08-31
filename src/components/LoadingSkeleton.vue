@@ -27,7 +27,7 @@ const emit = defineEmits<{ cancel: [] }>();
       <div
         v-for="row in rows"
         :key="row"
-        class="d-flex gap-3 px-3 py-3"
+        class="d-flex gap-3 skeleton-row"
         :class="row < rows && 'border-bottom'"
       >
         <div
@@ -68,6 +68,10 @@ const emit = defineEmits<{ cancel: [] }>();
 </template>
 
 <style scoped>
+.skeleton-row {
+  padding: 1rem 0.75rem;
+}
+
 .skeleton-cell {
   height: 1rem;
   background: var(--bs-secondary-bg);
@@ -85,7 +89,11 @@ const emit = defineEmits<{ cancel: [] }>();
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-cell {
+.skeleton-row {
+  padding: 1rem 0.75rem;
+}
+
+.skeleton-cell {
     animation: none;
     opacity: 0.6;
   }

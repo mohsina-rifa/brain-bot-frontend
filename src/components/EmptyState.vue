@@ -21,7 +21,7 @@ const emit = defineEmits<{ action: [] }>();
 </script>
 
 <template>
-  <div class="text-center border rounded py-5 px-3">
+  <div class="text-center border rounded empty-state">
     <i :class="`bi bi-${icon}`" class="fs-1 text-body-secondary d-block mb-2" />
     <p class="fw-semibold mb-1">{{ title }}</p>
     <p v-if="description || $slots.default" class="text-body-secondary mb-3">
@@ -36,3 +36,9 @@ const emit = defineEmits<{ action: [] }>();
     </BButton>
   </div>
 </template>
+
+<style scoped>
+.empty-state {
+  padding: 3rem 1.5rem;
+}
+</style>

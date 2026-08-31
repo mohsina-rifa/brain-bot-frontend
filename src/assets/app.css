@@ -60,3 +60,16 @@ th {
 .bot-name-link:hover {
   text-decoration: underline;
 }
+
+/*
+ * ...and one scale for surfaces, so a panel, a table and an empty state do not
+ * each pick their own interior padding:
+ *
+ *   panel interior    1rem      (p-3 — the playground thread)
+ *   table cell        0.75rem   (set from theme.scss, not per-view)
+ *   empty state       3rem / 1.5rem — more air on purpose, it is a focal block
+ *
+ * Tables carry no wrapper padding at all: the cells supply it, and adding
+ * padding to .table-responsive as well is what produces the doubled gutter
+ * down the left edge of a bordered table.
+ */
