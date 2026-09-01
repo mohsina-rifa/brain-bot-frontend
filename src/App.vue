@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useRoute, RouterView } from "vue-router";
-import { BButton } from "bootstrap-vue-next";
 import AppShell from "@/components/AppShell.vue";
 import ErrorBoundary from "@/components/ErrorBoundary.vue";
 import { useOnline } from "@/composables/useOnline";
@@ -37,8 +36,7 @@ function plural(n: number) {
 const notice = computed(() => {
   if (!online.value) {
     return {
-      tone: "text-bg-warning",
-      icon: "wifi-off",
+      tone: "warning",
       text: queue.count
         ? `You are offline. ${queue.count} ${plural(queue.count)} waiting to send.`
         : "You are offline. Edits you make now are held and sent when the connection is back.",
@@ -48,8 +46,7 @@ const notice = computed(() => {
 
   if (queue.flushing) {
     return {
-      tone: "text-bg-info",
-      icon: "arrow-repeat",
+      tone: "",
       text: `Sending ${queue.count} queued ${plural(queue.count)}…`,
       retry: false,
     };
@@ -57,8 +54,7 @@ const notice = computed(() => {
 
   if (queue.count) {
     return {
-      tone: "text-bg-danger",
-      icon: "exclamation-triangle",
+      tone: "danger",
       text: `${queue.count} ${plural(queue.count)} could not be sent.`,
       retry: true,
     };
@@ -66,16 +62,14 @@ const notice = computed(() => {
 
   if (queue.sent) {
     return {
-      tone: "text-bg-success",
-      icon: "check2",
+      tone: "success",
       text: `Back online. ${queue.sent} ${plural(queue.sent)} sent.`,
       retry: false,
     };
   }
 
   return {
-    tone: "text-bg-success",
-    icon: "wifi",
+    tone: "success",
     text: "Back online. Retry anything that failed.",
     retry: false,
   };
@@ -89,23 +83,20 @@ const showNotice = computed(
 <template>
   <div
     v-if="showNotice"
-    class="position-fixed top-0 start-50 translate-middle-x mt-2 px-3 py-2 rounded shadow-sm small d-flex align-items-center gap-2"
+    class="bb-notice bb-connection-notice"
     :class="notice.tone"
-    style="z-index: 1080; max-width: calc(100vw - 1.5rem)"
     role="status"
     aria-live="polite"
   >
-    <i class="bi" :class="`bi-${notice.icon}`" />
     <span>{{ notice.text }}</span>
-    <BButton
+    <button
       v-if="notice.retry"
-      size="sm"
-      variant="light"
-      class="py-0 flex-shrink-0"
+      type="button"
+      class="bb-btn"
       @click="queue.flush()"
     >
       Send now
-    </BButton>
+    </button>
   </div>
 
   <ErrorBoundary v-if="isPublic">
@@ -113,3 +104,29 @@ const showNotice = computed(
   </ErrorBoundary>
   <AppShell v-else />
 </template>
+
+<style scoped>
+/*
+ * Pinned above everything, including the sticky topbar (z-index 20) and an open
+ * modal, so losing the connection is visible even mid-dialog.
+ */
+.bb-connection-notice {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1080;
+  max-width: calc(100vw - 24px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--bb-shadow-sm);
+  font-weight: 700;
+}
+
+.bb-connection-notice .bb-btn {
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 4px 10px;
+}
+</style>

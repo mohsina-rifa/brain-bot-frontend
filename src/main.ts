@@ -5,7 +5,11 @@ import { createBootstrap } from 'bootstrap-vue-next'
 import '@/assets/theme.scss'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import 'bootstrap-vue-next/dist/bootstrap-vue-next.css'
+import '@/assets/design.css'
+import '@/assets/bootstrap-bridge.css'
 import '@/assets/app.css'
+
+import { useTheme } from '@/composables/useTheme'
 
 import App from './App.vue'
 import router from './router'
@@ -13,6 +17,9 @@ import { setUnauthorizedHandler, setSessionEnded } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useActiveBotStore } from '@/stores/activeBot'
 import { useWriteQueueStore } from '@/stores/writeQueue'
+
+// Applies the stored (or system) theme to <html> before the first paint.
+useTheme()
 
 const app = createApp(App)
 
