@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { BButton, BAlert, BSpinner } from "bootstrap-vue-next";
 import { useBots } from "@/composables/useBots";
+import { useDebouncedCallback } from "@/composables/useDebounce";
+import { useWorkspaceMetrics, useBotCounts } from "@/composables/useMetrics";
 import { useActiveBotStore } from "@/stores/activeBot";
 import CreateBotDialog from "@/components/CreateBotDialog.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -13,6 +14,7 @@ import type { Bot } from "@/types/api";
 
 const {
   page,
+  search,
   bots,
   hasLoaded,
   total,
@@ -33,11 +35,46 @@ const {
 
 const router = useRouter();
 const activeBot = useActiveBotStore();
+const metrics = useWorkspaceMetrics();
+const { counts, load: loadCounts } = useBotCounts();
 
 const showCreate = ref(false);
 const pendingDelete = ref<Bot | null>(null);
 
-onMounted(load);
+const term = ref("");
+
+const { invoke: applySearch } = useDebouncedCallback((value: string) => {
+  search.value = value;
+  page.value = 1;
+  void load();
+}, 300);
+
+watch(term, (value) => applySearch(value));
+
+// The per-card counts follow whichever bots are on screen, so they refresh
+// after a page change, a search, a create or a delete.
+watch(bots, (rows) => {
+  if (rows.length) void loadCounts(rows.map((bot) => bot._id));
+});
+
+async function refresh() {
+  await load();
+  void metrics.load();
+}
+
+onMounted(refresh);
+
+function initials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
@@ -64,32 +101,88 @@ async function confirmDelete() {
 
   if (activeBot.bot?._id === bot._id) activeBot.clear();
   pendingDelete.value = null;
+  void metrics.load();
 }
 </script>
 
 <template>
-  <div class="container-fluid py-4 px-4">
-    <div
-      class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3"
-    >
+  <div>
+    <section class="bb-page-head">
       <div>
-        <h1 class="h4 mb-1">Bots</h1>
-        <p class="text-body-secondary mb-0 d-flex align-items-center gap-2">
-          <span v-if="!hasLoaded && loading">Loading…</span>
-          <span v-else-if="error">Unavailable</span>
-          <span v-else>{{ total }} {{ total === 1 ? "bot" : "bots" }}</span>
-          <BSpinner v-if="hasLoaded && loading" small />
+        <h1>Your bots</h1>
+        <p>
+          Create and manage chatbot workspaces. Each bot keeps its own Q&amp;A
+          knowledge, conversations and branding.
         </p>
       </div>
-      <BButton variant="primary" @click="showCreate = true">
-        <i class="bi bi-plus-lg me-1" />Create bot
-      </BButton>
+      <div class="bb-page-actions">
+        <button
+          type="button"
+          class="bb-btn bb-btn-primary"
+          @click="showCreate = true"
+        >
+          ＋ Create bot
+        </button>
+      </div>
+    </section>
+
+    <section class="bb-metric-grid">
+      <div class="bb-card bb-metric">
+        <div class="bb-metric-top">
+          <span class="bb-metric-label">Total bots</span><span>🤖</span>
+        </div>
+        <div class="bb-metric-value">{{ metrics.totalBots.value ?? "—" }}</div>
+        <div class="bb-metric-note">Across this workspace</div>
+      </div>
+
+      <div class="bb-card bb-metric">
+        <div class="bb-metric-top">
+          <span class="bb-metric-label">Active</span>
+          <span class="bb-badge success"><span class="bb-dot"></span>Healthy</span>
+        </div>
+        <div class="bb-metric-value">{{ metrics.activeBots.value ?? "—" }}</div>
+        <div class="bb-metric-note">Ready to answer users</div>
+      </div>
+
+      <div class="bb-card bb-metric">
+        <div class="bb-metric-top">
+          <span class="bb-metric-label">Q&amp;A entries</span><span>▤</span>
+        </div>
+        <div class="bb-metric-value">{{ metrics.qnaEntries.value ?? "—" }}</div>
+        <div class="bb-metric-note">Managed knowledge items</div>
+      </div>
+
+      <div class="bb-card bb-metric">
+        <div class="bb-metric-top">
+          <span class="bb-metric-label">Test conversations</span><span>◌</span>
+        </div>
+        <div class="bb-metric-value">
+          {{ metrics.conversations.value ?? "—" }}
+        </div>
+        <div class="bb-metric-note">Created in playground</div>
+      </div>
+    </section>
+
+    <div class="bb-toolbar" style="margin-bottom: 16px">
+      <div class="bb-input-wrap">
+        <span class="bb-search-icon">⌕</span>
+        <input
+          v-model="term"
+          class="bb-input search"
+          type="search"
+          placeholder="Search bots by name..."
+          aria-label="Search bots by name"
+        />
+      </div>
+      <span v-if="hasLoaded" class="bb-metric-label">
+        {{ total }} {{ total === 1 ? "bot" : "bots" }}
+      </span>
     </div>
 
     <LoadingSkeleton
       v-if="loading && !hasLoaded"
-      :rows="5"
-      :columns="4"
+      :rows="3"
+      :columns="3"
       :slow="slow"
       :retrying="retrying"
       cancellable
@@ -104,6 +197,16 @@ async function confirmDelete() {
     />
 
     <EmptyState
+      v-else-if="!bots.length && search"
+      illustration="search"
+      title="No bots match that search"
+      description="Try a different name, or clear the search to see every bot."
+      action-label="Clear search"
+      action-variant="secondary"
+      @action="term = ''"
+    />
+
+    <EmptyState
       v-else-if="!bots.length"
       illustration="bots"
       title="No bots yet"
@@ -112,116 +215,103 @@ async function confirmDelete() {
       @action="showCreate = true"
     />
 
-    <!-- Table -->
-    <div v-else>
-      <div
-        class="table-responsive border rounded"
-        :class="{ 'opacity-50': loading }"
+    <template v-else>
+      <section
+        class="bb-bot-grid"
+        :style="{ opacity: loading ? 0.5 : 1, transition: 'opacity 120ms ease' }"
         :aria-busy="loading"
-        style="transition: opacity 120ms ease"
       >
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Status</th>
-              <th scope="col">Created</th>
-              <th scope="col" class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="bot in bots" :key="bot._id">
-              <td>
-                <button
-                  type="button"
-                  class="btn btn-link p-0 fw-semibold bot-name-link"
-                  @click="open(bot)"
-                >
-                  <span
-                    class="d-inline-block rounded-circle me-2 align-middle"
-                    :style="{
-                      width: '.6rem',
-                      height: '.6rem',
-                      backgroundColor: bot.color,
-                    }"
-                  />
-                  {{ bot.name }}
-                </button>
-                <div class="small text-body-secondary">
-                  {{ bot.description }}
-                </div>
-              </td>
-              <td>
-                <span
-                  class="badge"
-                  :class="
-                    bot.status === 'active'
-                      ? 'text-bg-success'
-                      : 'text-bg-secondary'
-                  "
-                >
-                  {{ bot.status }}
-                </span>
-              </td>
-              <td class="text-nowrap">{{ formatDate(bot.createdAt) }}</td>
-              <td class="text-end text-nowrap">
-                <BButton
-                  size="sm"
-                  variant="outline-secondary"
-                  @click="open(bot)"
-                >
-                  Open
-                </BButton>
-                <BButton
-                  size="sm"
-                  variant="outline-danger"
-                  class="ms-2"
-                  :disabled="removing === bot._id"
-                  @click="onRequestDelete(bot)"
-                >
-                  <BSpinner v-if="removing === bot._id" small />
-                  <span v-else>Delete</span>
-                </BButton>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div
-        v-if="pageCount > 1"
-        class="d-flex justify-content-between align-items-center mt-3"
-      >
-        <small class="text-body-secondary"
-          >Page {{ page }} of {{ pageCount }}</small
+        <article
+          v-for="bot in bots"
+          :key="bot._id"
+          class="bb-card bb-bot-card"
+          :style="{ '--bb-bot-color': bot.color }"
         >
-        <div class="d-flex gap-2">
-          <BButton
-            size="sm"
-            variant="outline-secondary"
+          <div class="bb-bot-card-head">
+            <div class="bb-bot-icon">{{ initials(bot.name) }}</div>
+            <span
+              class="bb-badge"
+              :class="bot.status === 'active' ? 'success' : 'neutral'"
+            >
+              <span class="bb-dot"></span
+              >{{ bot.status === "active" ? "Active" : "Inactive" }}
+            </span>
+          </div>
+
+          <h3>{{ bot.name }}</h3>
+          <p>{{ bot.description }}</p>
+
+          <div class="bb-bot-stats">
+            <div class="bb-bot-stat">
+              <strong>{{ counts[bot._id]?.qna ?? "—" }}</strong>
+              <span>Q&amp;A entries</span>
+            </div>
+            <div class="bb-bot-stat">
+              <strong>{{ counts[bot._id]?.conversations ?? "—" }}</strong>
+              <span>Test chats</span>
+            </div>
+          </div>
+
+          <div class="bb-bot-card-actions">
+            <button type="button" class="bb-btn" @click="open(bot)">
+              Manage
+            </button>
+            <button
+              type="button"
+              class="bb-btn bb-btn-primary"
+              @click="
+                activeBot.set(bot);
+                router.push(`/bots/${bot._id}/playground`);
+              "
+            >
+              Test bot
+            </button>
+            <button
+              type="button"
+              class="bb-icon-btn"
+              :disabled="removing === bot._id"
+              :aria-label="`Delete ${bot.name}`"
+              title="Delete bot"
+              @click="onRequestDelete(bot)"
+            >
+              ⌫
+            </button>
+          </div>
+
+          <div class="bb-metric-note">Created {{ formatDate(bot.createdAt) }}</div>
+        </article>
+      </section>
+
+      <div v-if="pageCount > 1" class="bb-pagination">
+        <span>Page {{ page }} of {{ pageCount }} · {{ total }} bots</span>
+        <div class="bb-pager">
+          <button
+            type="button"
             :disabled="page <= 1 || loading"
+            aria-label="Previous page"
             @click="goTo(page - 1)"
           >
-            Previous
-          </BButton>
-          <BButton
-            size="sm"
-            variant="outline-secondary"
+            ‹
+          </button>
+          <button
+            type="button"
             :disabled="page >= pageCount || loading"
+            aria-label="Next page"
             @click="goTo(page + 1)"
           >
-            Next
-          </BButton>
+            ›
+          </button>
         </div>
       </div>
-    </div>
+    </template>
 
-    <CreateBotDialog v-model="showCreate" @created="load" />
+    <CreateBotDialog v-model="showCreate" @created="refresh" />
 
     <ConfirmDialog
       :model-value="pendingDelete !== null"
-      title="Delete bot"
-      confirm-label="Delete bot"
+      title="Delete bot?"
+      subtitle="This action cannot be undone."
+      confirm-label="Delete"
       :busy="removing !== null"
       :slow="slowRemove"
       @update:model-value="
@@ -234,27 +324,44 @@ async function confirmDelete() {
       "
       @confirm="confirmDelete"
     >
-      <BAlert
+      <div
         v-if="removeError"
-        :model-value="true"
-        variant="danger"
-        class="mb-3 d-flex justify-content-between align-items-center gap-3"
+        class="bb-notice danger bb-confirm-error"
+        role="alert"
       >
         <span>{{ removeError }}</span>
-        <BButton
-          variant="outline-danger"
-          size="sm"
-          class="flex-shrink-0"
+        <button
+          type="button"
+          class="bb-btn bb-btn-danger"
           :disabled="removing !== null"
           @click="confirmDelete"
         >
           Retry
-        </BButton>
-      </BAlert>
+        </button>
+      </div>
 
-      Delete <strong>{{ pendingDelete?.name }}</strong
-      >? Its Q&amp;A content and conversations will no longer be reachable. This
-      cannot be undone.
+      <div class="bb-notice danger">
+        <strong>{{ pendingDelete?.name }}</strong> will be permanently removed.
+        Its Q&amp;A content and conversations will no longer be reachable.
+      </div>
     </ConfirmDialog>
   </div>
 </template>
+
+<style scoped>
+.bb-confirm-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.bb-confirm-error .bb-btn {
+  flex-shrink: 0;
+}
+
+.bb-bot-card .bb-metric-note {
+  margin-top: 12px;
+}
+</style>

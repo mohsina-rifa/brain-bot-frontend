@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, toRef, watch } from "vue";
+import { RouterLink } from "vue-router";
 import { useToast } from "bootstrap-vue-next";
 import client, { isSessionEnded, toFieldErrors, toMessage } from "@/api/client";
 import { useActiveBotStore } from "@/stores/activeBot";
@@ -89,17 +90,49 @@ async function save(values: Record<string, string>): Promise<boolean> {
 function retry() {
   if (lastValues) void save(lastValues);
 }
+
+/*
+ * The preview panel follows what is being typed rather than what was last
+ * saved, so BrandingForm reports its live values up here.
+ */
+const preview = ref({ name: "", color: "#4f46e5", welcomeMessage: "" });
+
+function onPreview(values: {
+  name: string;
+  color: string;
+  welcomeMessage: string;
+}) {
+  preview.value = values;
+}
+
+
 </script>
 
 <template>
-  <div class="container-fluid py-4 px-4">
-    <div class="mb-3">
-      <h1 class="h4 mb-1">Branding</h1>
-      <p class="text-body-secondary mb-0">
-        {{ activeBot.bot?.name ?? "Bot" }} · how this bot presents itself in the
-        playground
-      </p>
-    </div>
+  <div>
+    <section class="bb-page-head">
+      <div>
+        <h1>Bot settings</h1>
+        <p>
+          Manage how
+          <strong>{{ activeBot.bot?.name ?? "this bot" }}</strong> is presented
+          in the playground and to end users.
+        </p>
+      </div>
+      <div class="bb-page-actions">
+        <RouterLink :to="`/bots/${props.id}/playground`" class="bb-btn">
+          Preview in playground
+        </RouterLink>
+        <button
+          type="submit"
+          form="branding-form"
+          class="bb-btn bb-btn-primary"
+          :disabled="saving || !activeBot.bot"
+        >
+          {{ saving ? "Saving…" : "Save changes" }}
+        </button>
+      </div>
+    </section>
 
     <LoadingSkeleton
       v-if="activeBot.loading && !activeBot.bot"
@@ -108,7 +141,6 @@ function retry() {
       :slow="activeBot.slow"
       :retrying="activeBot.retrying"
       cancellable
-      style="max-width: 42rem"
       @cancel="activeBot.cancel"
     />
 
@@ -122,7 +154,7 @@ function retry() {
       @retry="activeBot.retry"
     />
 
-    <div v-else style="max-width: 42rem">
+    <section v-else class="bb-settings-layout">
       <BrandingForm
         :bot="activeBot.bot"
         :busy="saving"
@@ -131,7 +163,58 @@ function retry() {
         :field-errors="fieldErrors"
         @save="save"
         @retry="retry"
+        @preview="onPreview"
       />
-    </div>
+
+      <aside class="bb-card bb-preview-card">
+        <div
+          class="bb-preview-top"
+          :style="{ '--bb-bot-preview': preview.color }"
+        >
+          <strong>{{ preview.name || "Untitled bot" }}</strong>
+          <span>Typically replies instantly</span>
+        </div>
+
+        <div class="bb-preview-body">
+          <div class="bb-preview-bubble">
+            {{
+              preview.welcomeMessage ||
+              "No welcome message set — the playground opens with an empty thread."
+            }}
+          </div>
+          <div class="bb-preview-bubble user">How do I reset my password?</div>
+          <div class="bb-preview-bubble" style="margin-top: 18px">
+            Answers come from this bot's Q&amp;A content.
+          </div>
+        </div>
+
+        <div class="bb-preview-input">
+          <div>Type your message…</div>
+          <button
+            type="button"
+            class="bb-btn bb-btn-primary"
+            disabled
+            aria-label="Preview only"
+          >
+            ↑
+          </button>
+        </div>
+
+        <div class="bb-preview-foot">
+          A visual preview of the branding above. It is not a live chat — use
+          the playground to test real answers.
+        </div>
+      </aside>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.bb-preview-foot {
+  padding: 12px 18px;
+  border-top: 1px solid var(--bb-border);
+  color: var(--bb-muted);
+  font-size: 11px;
+  background: var(--bb-surface);
+}
+</style>
