@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { BButton } from "bootstrap-vue-next";
-
 withDefaults(
   defineProps<{
     rows?: number;
@@ -23,28 +21,24 @@ const emit = defineEmits<{ cancel: [] }>();
 
 <template>
   <div>
-    <div class="border rounded overflow-hidden" aria-hidden="true">
+    <div class="bb-skeleton" aria-hidden="true">
       <div
         v-for="row in rows"
         :key="row"
-        class="d-flex gap-3 skeleton-row"
-        :class="row < rows && 'border-bottom'"
+        class="bb-skeleton-row"
+        :class="row < rows && 'bb-skeleton-divided'"
       >
         <div
           v-for="column in columns"
           :key="column"
-          class="skeleton-cell rounded"
+          class="bb-skeleton-cell"
           :style="{ flex: column === 1 ? 3 : 1 }"
         />
       </div>
     </div>
 
-    <div v-if="slow" class="text-center mt-3">
-      <p
-        class="text-body-secondary small mb-0"
-        role="status"
-        aria-live="polite"
-      >
+    <div v-if="slow" class="bb-skeleton-note">
+      <p role="status" aria-live="polite">
         {{
           retrying
             ? "That did not go through. Trying again…"
@@ -52,15 +46,14 @@ const emit = defineEmits<{ cancel: [] }>();
         }}
       </p>
 
-      <BButton
+      <button
         v-if="cancellable"
-        size="sm"
-        variant="outline-secondary"
-        class="mt-2"
+        type="button"
+        class="bb-btn"
         @click="emit('cancel')"
       >
         Stop waiting
-      </BButton>
+      </button>
     </div>
 
     <span class="visually-hidden" role="status">Loading</span>
@@ -68,17 +61,33 @@ const emit = defineEmits<{ cancel: [] }>();
 </template>
 
 <style scoped>
-.skeleton-row {
-  padding: 1rem 0.75rem;
+.bb-skeleton {
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius);
+  overflow: hidden;
+  background: var(--bb-surface);
 }
 
-.skeleton-cell {
-  height: 1rem;
-  background: var(--bs-secondary-bg);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+.bb-skeleton-row {
+  display: flex;
+  gap: 14px;
+  /* Matches the 14px/18px of a real .bb-table cell, so the rows do not shift
+     height when data replaces the placeholder. */
+  padding: 14px 18px;
 }
 
-@keyframes skeleton-pulse {
+.bb-skeleton-divided {
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.bb-skeleton-cell {
+  height: 16px;
+  border-radius: 6px;
+  background: var(--bb-surface-3);
+  animation: bb-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes bb-skeleton-pulse {
   0%,
   100% {
     opacity: 0.45;
@@ -88,12 +97,23 @@ const emit = defineEmits<{ cancel: [] }>();
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-.skeleton-row {
-  padding: 1rem 0.75rem;
+.bb-skeleton-note {
+  text-align: center;
+  margin-top: 14px;
 }
 
-.skeleton-cell {
+.bb-skeleton-note p {
+  margin: 0;
+  color: var(--bb-muted);
+  font-size: 12px;
+}
+
+.bb-skeleton-note .bb-btn {
+  margin-top: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-skeleton-cell {
     animation: none;
     opacity: 0.6;
   }

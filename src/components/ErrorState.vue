@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { BAlert, BButton } from "bootstrap-vue-next";
-
 withDefaults(
   defineProps<{
     message: string;
@@ -14,20 +12,31 @@ const emit = defineEmits<{ retry: [] }>();
 </script>
 
 <template>
-  <BAlert
-    :model-value="true"
-    variant="danger"
-    class="d-flex justify-content-between align-items-center gap-3"
+  <div
+    class="bb-notice danger bb-error-state"
+    role="alert"
   >
     <span>{{ message }}</span>
-    <BButton
-      variant="outline-danger"
-      size="sm"
-      class="flex-shrink-0"
+    <button
+      type="button"
+      class="bb-btn bb-btn-danger"
       :disabled="busy"
       @click="emit('retry')"
     >
       {{ actionLabel }}
-    </BButton>
-  </BAlert>
+    </button>
+  </div>
 </template>
+
+<style scoped>
+.bb-error-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.bb-error-state .bb-btn {
+  flex-shrink: 0;
+}
+</style>

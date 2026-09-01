@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onErrorCaptured, ref, watch } from "vue";
-import { useRoute } from "vue-router";
-import { BButton } from "bootstrap-vue-next";
+import { RouterLink, useRoute } from "vue-router";
 
 const error = ref<Error | null>(null);
 const route = useRoute();
@@ -24,33 +23,68 @@ function reload() {
 </script>
 
 <template>
-  <div
-    v-if="error"
-    class="container-fluid py-5 px-4 d-flex justify-content-center"
-  >
-    <div class="text-center" style="max-width: 32rem">
-      <i class="bi bi-exclamation-octagon fs-1 text-danger d-block mb-3" />
-      <h1 class="h5 mb-2">This screen ran into a problem</h1>
-      <p class="text-body-secondary">
+  <div v-if="error" class="bb-empty">
+    <div>
+      <div class="bb-empty-icon bb-error-icon">!</div>
+
+      <h3>This screen ran into a problem</h3>
+      <p>
         Something went wrong rendering this page. Nothing you had already saved
         is affected — reload, or pick another screen from the menu.
       </p>
 
-      <div class="d-flex gap-2 justify-content-center mb-3">
-        <BButton variant="primary" @click="reload">Reload the page</BButton>
-        <BButton variant="outline-secondary" to="/bots">Go to bots</BButton>
+      <div class="bb-error-actions">
+        <button type="button" class="bb-btn bb-btn-primary" @click="reload">
+          Reload the page
+        </button>
+        <RouterLink to="/bots" class="bb-btn">Go to bots</RouterLink>
       </div>
 
-      <details v-if="error.message" class="text-start small">
-        <summary class="text-body-secondary">Technical detail</summary>
-        <pre
-          class="mt-2 p-2 bg-body-tertiary border rounded overflow-auto mb-0"
-          style="max-height: 12rem"
-          >{{ error.message }}</pre
-        >
+      <details v-if="error.message" class="bb-error-detail">
+        <summary>Technical detail</summary>
+        <pre>{{ error.message }}</pre>
       </details>
     </div>
   </div>
 
   <slot v-else />
 </template>
+
+<style scoped>
+.bb-error-icon {
+  background: var(--bb-danger-soft);
+  color: var(--bb-danger);
+  font-size: 26px;
+  font-weight: 850;
+}
+
+.bb-error-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.bb-error-detail {
+  text-align: left;
+  font-size: 12px;
+}
+
+.bb-error-detail summary {
+  cursor: pointer;
+  color: var(--bb-muted);
+}
+
+.bb-error-detail pre {
+  margin: 10px 0 0;
+  padding: 12px;
+  background: var(--bb-surface-2);
+  border: 1px solid var(--bb-border);
+  border-radius: 12px;
+  max-height: 12rem;
+  overflow: auto;
+  font-size: 11px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+</style>
