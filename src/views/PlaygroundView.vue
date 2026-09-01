@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef, watch } from "vue";
-import { BAlert, BButton, BSpinner } from "bootstrap-vue-next";
 import { useConversation } from "@/composables/useConversation";
 import { useActiveBotStore } from "@/stores/activeBot";
 import MessageThread from "@/components/MessageThread.vue";
@@ -60,163 +59,198 @@ const suggestion = computed(
     activeBot.bot?.suggestionMessage?.trim() ||
     "Ask anything this bot should be able to answer. Replies come from its Q&A content, so this is a real test of the knowledge base.",
 );
+
+function initials(name?: string | null) {
+  if (!name) return "??";
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
 </script>
 
 <template>
-  <div
-    class="container-fluid py-4 px-4 d-flex flex-column playground-page"
-    style="min-height: 0"
-    :style="activeBot.bot?.color ? { '--bot-accent': activeBot.bot.color } : {}"
-  >
-    <div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <section class="bb-page-head">
       <div>
-        <h1 class="h4 mb-1">Playground</h1>
-        <p
-          class="text-body-secondary mb-0 d-flex flex-wrap align-items-center gap-2"
-        >
-          <span
-            v-if="activeBot.bot?.color"
-            class="rounded-circle flex-shrink-0 border"
-            style="width: 0.75rem; height: 0.75rem"
-            :style="{ background: activeBot.bot.color }"
-          />
-          <span>
-            {{ activeBot.bot?.name ?? "Bot" }} · answers come from this bot's
-            knowledge base
-          </span>
-          <BSpinner v-if="activeBot.loading" small />
-          <span
-            v-if="activeBot.bot?.status === 'inactive'"
-            class="badge text-bg-secondary"
-          >
-            inactive
-          </span>
+        <h1>Chatbot playground</h1>
+        <p>
+          Test the current knowledge base exactly as an end user would
+          experience it.
         </p>
       </div>
-      <BButton
-        variant="outline-secondary"
-        :disabled="!started || sending"
-        @click="requestReset"
-      >
-        <i class="bi bi-arrow-counterclockwise me-1" />Reset
-      </BButton>
-    </div>
+      <div class="bb-page-actions">
+        <button
+          type="button"
+          class="bb-btn"
+          :disabled="!started || sending"
+          @click="requestReset"
+        >
+          ↻ Reset conversation
+        </button>
+      </div>
+    </section>
 
-    <BAlert
+    <div
       v-if="activeBot.error"
-      :model-value="true"
-      variant="warning"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
+      class="bb-notice warning bb-inline-notice"
+      role="alert"
     >
       <span>
         {{ activeBot.error }} You can still chat, but this bot's welcome message
         and branding are not showing.
       </span>
-      <BButton
-        variant="outline-secondary"
-        size="sm"
-        class="flex-shrink-0"
+      <button
+        type="button"
+        class="bb-btn"
         :disabled="activeBot.loading"
         @click="activeBot.retry"
       >
         Retry
-      </BButton>
-    </BAlert>
-
-    <div
-      ref="panel"
-      class="p-3 mb-3 chat-panel"
-    >
-      <template v-if="!messages.length && !pending && !failed">
-        <MessageThread
-          v-if="welcome.length"
-          :messages="welcome"
-          :accent="activeBot.bot?.color"
-        />
-        <p
-          class="text-body-secondary small mb-0"
-          :class="welcome.length ? 'mt-3' : ''"
-        >
-          {{ suggestion }}
-        </p>
-      </template>
-      <MessageThread
-        v-else
-        :messages="messages"
-        :accent="activeBot.bot?.color"
-        :pending="pending"
-        :failed="failed"
-        :thinking="sending"
-        :slow="slow"
-        :matches="matches"
-        @retry="retry"
-      />
+      </button>
     </div>
 
-    <BAlert
-      v-if="error"
-      :model-value="true"
-      variant="danger"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
-    >
-      <span>{{ error }}</span>
-      <BButton
-        variant="outline-danger"
-        size="sm"
-        class="flex-shrink-0"
-        :disabled="sending"
-        @click="retry"
-      >
-        Retry
-      </BButton>
-    </BAlert>
+    <section class="bb-chat-layout">
+      <div class="bb-card bb-chat-panel">
+        <div class="bb-chat-head">
+          <div class="bb-chat-head-meta">
+            <div
+              class="bb-bot-icon bb-chat-icon"
+              :style="{ '--bb-bot-color': activeBot.bot?.color ?? undefined }"
+            >
+              {{ initials(activeBot.bot?.name) }}
+            </div>
+            <div>
+              <strong class="bb-chat-name">{{
+                activeBot.bot?.name ?? "Bot"
+              }}</strong>
+              <span class="bb-chat-sub">
+                Answers come from this bot's knowledge base
+              </span>
+            </div>
+          </div>
+          <span
+            class="bb-badge"
+            :class="activeBot.bot?.status === 'inactive' ? 'neutral' : 'success'"
+          >
+            <span class="bb-dot"></span>
+            {{
+              activeBot.bot?.status === "inactive"
+                ? "Inactive"
+                : "Knowledge ready"
+            }}
+          </span>
+        </div>
 
-    <MessageComposer :busy="sending" @send="send" />
+        <div ref="panel" class="bb-chat-messages">
+          <template v-if="!messages.length && !pending && !failed">
+            <MessageThread
+              v-if="welcome.length"
+              :messages="welcome"
+              :accent="activeBot.bot?.color"
+            />
+            <p class="bb-chat-hint">{{ suggestion }}</p>
+          </template>
+
+          <MessageThread
+            v-else
+            :messages="messages"
+            :accent="activeBot.bot?.color"
+            :pending="pending"
+            :failed="failed"
+            :thinking="sending"
+            :slow="slow"
+            :matches="matches"
+            @retry="retry"
+          />
+        </div>
+
+        <div v-if="error" class="bb-notice danger bb-chat-error" role="alert">
+          <span>{{ error }}</span>
+          <button
+            type="button"
+            class="bb-btn bb-btn-danger"
+            :disabled="sending"
+            @click="retry"
+          >
+            Retry
+          </button>
+        </div>
+
+        <MessageComposer :busy="sending" @send="send" />
+      </div>
+    </section>
 
     <ConfirmDialog
       v-model="confirmingReset"
-      title="Reset conversation"
-      confirm-label="Start fresh"
+      title="Reset conversation?"
+      subtitle="Start a clean test session for this bot."
+      confirm-label="Reset conversation"
       variant="primary"
       @confirm="confirmReset"
     >
-      Clear this thread and start a new conversation? The previous one is kept
-      on the server, but it will not be shown here again.
+      <div class="bb-notice">
+        The current test thread will be cleared from this playground view and a
+        new conversation will begin. The previous one is kept on the server, but
+        it will not be shown here again.
+      </div>
     </ConfirmDialog>
   </div>
 </template>
 
 <style scoped>
-.chat-panel {
-  border: var(--bs-border-width) solid
-    color-mix(
-      in srgb,
-      var(--bot-accent, var(--bs-border-color)) 35%,
-      var(--bs-border-color)
-    );
-  border-top: 0.1875rem solid var(--bot-accent, var(--bs-border-color));
-  border-radius: var(--bs-border-radius);
-  min-height: 24rem;
-  max-height: calc(100vh - 22rem);
-  overflow-y: auto;
+.bb-inline-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-@media (max-width: 767.98px) {
-  .chat-panel {
-    min-height: 12rem;
-    max-height: calc(100vh - 17rem);
-  }
+.bb-inline-notice .bb-btn {
+  flex-shrink: 0;
 }
 
-@media (max-height: 32rem) {
-  .chat-panel {
-    min-height: 0;
-    max-height: calc(100vh - 14rem);
-  }
+.bb-chat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 12px;
+}
 
-  .playground-page {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
-  }
+.bb-chat-name {
+  display: block;
+  font-size: 13px;
+}
+
+.bb-chat-sub {
+  font-size: 11px;
+  color: var(--bb-muted);
+}
+
+.bb-chat-hint {
+  margin: 14px 0 0;
+  color: var(--bb-muted);
+  font-size: 12px;
+}
+
+.bb-chat-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.bb-chat-error .bb-btn {
+  flex-shrink: 0;
 }
 </style>
