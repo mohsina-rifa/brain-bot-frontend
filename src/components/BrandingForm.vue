@@ -1,16 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import {
-  BForm,
-  BFormGroup,
-  BFormInput,
-  BFormSelect,
-  BFormTextarea,
-  BFormCheckbox,
-  BButton,
-  BAlert,
-  BSpinner,
-} from "bootstrap-vue-next";
 import type { Bot } from "@/types/api";
 
 const props = defineProps<{
@@ -24,6 +13,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   save: [values: Record<string, string>];
   retry: [];
+  /* Lets the settings page mirror unsaved edits in its preview panel. */
+  preview: [values: { name: string; color: string; welcomeMessage: string }];
 }>();
 
 const name = ref("");
@@ -53,6 +44,31 @@ watch(
   { immediate: true },
 );
 
+// The preview panel shows what the operator is typing, not what was last
+// saved, so it updates as these three fields change.
+watch(
+  [name, color, welcomeMessage],
+  ([nextName, nextColor, nextWelcome]) => {
+    emit("preview", {
+      name: nextName,
+      color: nextColor,
+      welcomeMessage: nextWelcome,
+    });
+  },
+  { immediate: true },
+);
+
+const iconInitials = computed(
+  () =>
+    name.value
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase() || "?",
+);
+
 const handoverMessageMissing = computed(
   () => handoverToHuman.value && !handOverToHumanMessage.value.trim(),
 );
@@ -80,202 +96,260 @@ function onSubmit() {
 </script>
 
 <template>
-  <BForm novalidate @submit.prevent="onSubmit">
-    <BAlert
-      v-if="error"
-      :model-value="true"
-      variant="danger"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
-    >
+  <form id="branding-form" novalidate @submit.prevent="onSubmit">
+    <div v-if="error" class="bb-notice danger bb-inline-notice" role="alert">
       <span>{{ error }}</span>
-      <BButton
-        variant="outline-danger"
-        size="sm"
-        class="flex-shrink-0"
+      <button
+        type="button"
+        class="bb-btn bb-btn-danger"
         :disabled="busy"
         @click="emit('retry')"
       >
         Retry
-      </BButton>
-    </BAlert>
+      </button>
+    </div>
 
-    <BAlert
-      v-if="busy && slow"
-      :model-value="true"
-      variant="info"
-      class="mb-3 d-flex align-items-center gap-2"
-    >
-      <BSpinner small />
+    <div v-if="busy && slow" class="bb-notice bb-inline-notice" role="status">
       <span>Still saving. The logo is uploading — leave this page open.</span>
-    </BAlert>
+    </div>
 
-    <h2 class="form-section">Identity</h2>
+    <div class="bb-settings-col">
+      <div class="bb-card">
+        <div class="bb-card-header">
+          <div>
+            <h3>Identity</h3>
+            <div class="bb-table-sub">
+              Name, status and basic bot information.
+            </div>
+          </div>
+        </div>
+        <div class="bb-card-body">
+          <div class="bb-form-grid">
+            <div class="bb-form-group">
+              <label class="bb-form-label" for="bot-name">Bot name</label>
+              <input
+                id="bot-name"
+                v-model="name"
+                class="bb-input"
+                required
+                :disabled="busy"
+                :aria-invalid="Boolean(fieldErrors?.name)"
+              />
+              <div v-if="fieldErrors?.name" class="bb-field-error">
+                {{ fieldErrors.name }}
+              </div>
+            </div>
 
-    <BFormGroup
-      label="Name"
-      label-for="bot-name"
-      class="mb-3"
-      description="At least three characters."
-      :state="fieldErrors?.name ? false : null"
-      :invalid-feedback="fieldErrors?.name"
-    >
-      <BFormInput
-        id="bot-name"
-        v-model="name"
-        required
-        :disabled="busy"
-        :state="fieldErrors?.name ? false : null"
-      />
-    </BFormGroup>
+            <div class="bb-form-group">
+              <label class="bb-form-label" for="bot-status">Status</label>
+              <select
+                id="bot-status"
+                v-model="status"
+                class="bb-select"
+                :disabled="busy"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
 
-    <BFormGroup
-      label="Description"
-      label-for="bot-description"
-      class="mb-3"
-      :state="fieldErrors?.description ? false : null"
-      :invalid-feedback="fieldErrors?.description"
-    >
-      <BFormTextarea
-        id="bot-description"
-        v-model="description"
-        rows="2"
-        max-rows="4"
-        :disabled="busy"
-      />
-    </BFormGroup>
+            <div class="bb-form-group bb-span-2">
+              <label class="bb-form-label" for="bot-description">
+                Description
+              </label>
+              <textarea
+                id="bot-description"
+                v-model="description"
+                class="bb-textarea"
+                :disabled="busy"
+                :aria-invalid="Boolean(fieldErrors?.description)"
+              />
+              <div v-if="fieldErrors?.description" class="bb-field-error">
+                {{ fieldErrors.description }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <div class="row g-3">
-      <div class="col-sm-6">
-        <BFormGroup
-          label="Colour"
-          label-for="bot-color"
-          description="Used for the bot's accent in the playground."
-          :state="fieldErrors?.color ? false : null"
-          :invalid-feedback="fieldErrors?.color"
-        >
-          <div class="d-flex align-items-center gap-2">
-            <BFormInput
-              id="bot-color"
-              v-model="color"
-              type="color"
-              class="form-control-color"
+      <div class="bb-card">
+        <div class="bb-card-header">
+          <div>
+            <h3>Branding</h3>
+            <div class="bb-table-sub">
+              Keep the bot visually aligned with your product.
+            </div>
+          </div>
+        </div>
+        <div class="bb-card-body">
+          <div class="bb-form-grid">
+            <div class="bb-form-group">
+              <label class="bb-form-label" for="bot-color">Brand colour</label>
+              <div class="bb-color-row">
+                <span class="bb-color-swatch">
+                  <input
+                    id="bot-color"
+                    v-model="color"
+                    type="color"
+                    :disabled="busy"
+                    aria-label="Choose brand colour"
+                  />
+                </span>
+                <input
+                  v-model="color"
+                  class="bb-input"
+                  :disabled="busy"
+                  aria-label="Brand colour hex value"
+                />
+              </div>
+              <div v-if="fieldErrors?.color" class="bb-field-error">
+                {{ fieldErrors.color }}
+              </div>
+            </div>
+
+            <div class="bb-form-group">
+              <label class="bb-form-label" for="bot-icon">Bot icon</label>
+              <input
+                id="bot-icon"
+                class="bb-input"
+                :value="iconInitials"
+                disabled
+                readonly
+              />
+              <div class="bb-form-help">
+                Taken from the bot's name — edit the name to change it.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bb-card">
+        <div class="bb-card-header">
+          <div>
+            <h3>Conversation messages</h3>
+            <div class="bb-table-sub">
+              Messages shown when a chat starts or no answer is found.
+            </div>
+          </div>
+        </div>
+        <div class="bb-card-body">
+          <div class="bb-form-group" style="margin-bottom: 16px">
+            <label class="bb-form-label" for="bot-welcome">
+              Welcome message
+            </label>
+            <textarea
+              id="bot-welcome"
+              v-model="welcomeMessage"
+              class="bb-textarea"
               :disabled="busy"
             />
-            <code class="small text-body-secondary">{{ color }}</code>
+            <div class="bb-form-help">
+              Shown at the top of the playground before the first question.
+            </div>
           </div>
-        </BFormGroup>
+
+          <div class="bb-form-group" style="margin-bottom: 16px">
+            <label class="bb-form-label" for="bot-fallback">
+              Fallback message
+            </label>
+            <textarea
+              id="bot-fallback"
+              v-model="fallbackMessage"
+              class="bb-textarea"
+              :disabled="busy"
+            />
+            <div class="bb-form-help">
+              Sent when nothing in the Q&amp;A content matches.
+            </div>
+          </div>
+
+          <div class="bb-form-group">
+            <label class="bb-form-label" for="bot-suggestion">
+              Suggestion message
+            </label>
+            <textarea
+              id="bot-suggestion"
+              v-model="suggestionMessage"
+              class="bb-textarea"
+              :disabled="busy"
+            />
+            <div class="bb-form-help">
+              Prompt shown in the playground to suggest what to ask.
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-sm-6">
-        <BFormGroup
-          label="Status"
-          label-for="bot-status"
-          :state="fieldErrors?.status ? false : null"
-          :invalid-feedback="fieldErrors?.status"
-        >
-          <BFormSelect
-            id="bot-status"
-            v-model="status"
-            :options="['active', 'inactive']"
-            :disabled="busy"
-          />
-        </BFormGroup>
+
+      <div class="bb-card">
+        <div class="bb-card-header">
+          <div>
+            <h3>Availability</h3>
+            <div class="bb-table-sub">Optional behavior controls.</div>
+          </div>
+        </div>
+        <div class="bb-card-body">
+          <div class="bb-switch">
+            <div>
+              <strong style="font-size: 13px">Human handover</strong>
+              <div class="bb-table-sub">
+                Allow the bot to suggest a human support path.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="bb-switch-control"
+              :class="handoverToHuman && 'on'"
+              role="switch"
+              :aria-checked="handoverToHuman"
+              aria-label="Human handover"
+              :disabled="busy"
+              @click="handoverToHuman = !handoverToHuman"
+            />
+          </div>
+
+          <div
+            v-if="handoverToHuman"
+            class="bb-form-group"
+            style="margin-top: 16px"
+          >
+            <label class="bb-form-label" for="bot-handover-message">
+              Hand-over message
+            </label>
+            <textarea
+              id="bot-handover-message"
+              v-model="handOverToHumanMessage"
+              class="bb-textarea"
+              :disabled="busy"
+              :aria-invalid="Boolean(handoverMessageError)"
+            />
+            <div v-if="handoverMessageError" class="bb-field-error">
+              {{ handoverMessageError }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <h2 class="form-section form-section-divided">Messages</h2>
-
-    <BFormGroup
-      label="Welcome message"
-      label-for="bot-welcome"
-      class="mb-3"
-      description="Greets the visitor when a conversation opens."
-      :state="fieldErrors?.welcomeMessage ? false : null"
-      :invalid-feedback="fieldErrors?.welcomeMessage"
-    >
-      <BFormTextarea
-        id="bot-welcome"
-        v-model="welcomeMessage"
-        rows="2"
-        max-rows="4"
-        :disabled="busy"
-        :state="fieldErrors?.welcomeMessage ? false : null"
-      />
-    </BFormGroup>
-
-    <BFormGroup
-      label="Fallback message"
-      label-for="bot-fallback"
-      class="mb-3"
-      description="Sent when the bot finds no confident answer."
-      :state="fieldErrors?.fallbackMessage ? false : null"
-      :invalid-feedback="fieldErrors?.fallbackMessage"
-    >
-      <BFormTextarea
-        id="bot-fallback"
-        v-model="fallbackMessage"
-        rows="2"
-        max-rows="4"
-        :disabled="busy"
-        :state="fieldErrors?.fallbackMessage ? false : null"
-      />
-    </BFormGroup>
-
-    <BFormGroup
-      label="Suggestion message"
-      label-for="bot-suggestion"
-      class="mb-3"
-      description="Nudges the visitor towards what to ask next."
-      :state="fieldErrors?.suggestionMessage ? false : null"
-      :invalid-feedback="fieldErrors?.suggestionMessage"
-    >
-      <BFormTextarea
-        id="bot-suggestion"
-        v-model="suggestionMessage"
-        rows="2"
-        max-rows="4"
-        :disabled="busy"
-        :state="fieldErrors?.suggestionMessage ? false : null"
-      />
-    </BFormGroup>
-
-    <BFormCheckbox
-      id="bot-handover"
-      v-model="handoverToHuman"
-      switch
-      class="mb-3"
-      :disabled="busy"
-    >
-      Hand over to a human when the bot cannot help
-    </BFormCheckbox>
-
-    <BFormGroup
-      v-if="handoverToHuman"
-      label="Hand-over message"
-      label-for="bot-handover-message"
-      class="mb-3"
-      description="Shown as the bot passes the conversation to a person."
-      :state="handoverMessageError ? false : null"
-      :invalid-feedback="handoverMessageError"
-    >
-      <BFormTextarea
-        id="bot-handover-message"
-        v-model="handOverToHumanMessage"
-        rows="2"
-        max-rows="4"
-        :disabled="busy"
-        :state="handoverMessageError ? false : null"
-      />
-    </BFormGroup>
-
-    <div class="form-actions">
-      <BButton
-        type="submit"
-        variant="primary"
-        :disabled="busy || !name.trim() || handoverMessageMissing"
-      >
-        <BSpinner v-if="busy" small class="me-2" />
-        {{ busy ? "Saving…" : "Save changes" }}
-      </BButton>
-    </div>
-  </BForm>
+  </form>
 </template>
+
+<style scoped>
+.bb-inline-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.bb-inline-notice .bb-btn {
+  flex-shrink: 0;
+}
+
+.bb-field-error {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bb-danger);
+}
+</style>
