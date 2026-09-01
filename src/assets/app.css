@@ -1,75 +1,24 @@
+/*
+ * What is left of the pre-prototype stylesheet.
+ *
+ * The design system now lives in design.css, and the component styles that used
+ * to sit here (.empty-state, .chat-bubble, .form-section, .bot-name-link) went
+ * with the markup they styled. Bootstrap still supplies .visually-hidden and
+ * .visually-hidden-focusable, which the skip link and the screen-reader-only
+ * status text rely on.
+ */
+
 :focus-visible {
-  outline: 0.15rem solid var(--bs-primary);
-  outline-offset: 0.15rem;
-  border-radius: 0.2rem;
-}
-
-.skip-link {
-  position: absolute;
-  z-index: 1090;
-  margin: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.375rem;
-  text-decoration: none;
-}
-
-.chat-bubble,
-td,
-th {
-  overflow-wrap: anywhere;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-.form-section {
-  margin-bottom: 1rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-}
-
-.form-section-divided {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--bs-border-color);
-}
-
-.form-actions {
-  margin-top: 2rem;
-}
-
-.bot-name-link {
-  --bs-btn-color: var(--bs-body-color);
-  --bs-btn-hover-color: var(--bs-emphasis-color);
-  --bs-btn-active-color: var(--bs-emphasis-color);
-  text-decoration: none;
-}
-
-.bot-name-link:hover {
-  text-decoration: underline;
+  outline: none;
+  box-shadow: var(--bb-ring);
+  border-radius: 8px;
 }
 
 /*
- * ...and one scale for surfaces, so a panel, a table and an empty state do not
- * each pick their own interior padding:
- *
- *   panel interior    1rem      (p-3 — the playground thread)
- *   table cell        0.75rem   (set from theme.scss, not per-view)
- *   empty state       3rem / 1.5rem — more air on purpose, it is a focal block
- *
- * Tables carry no wrapper padding at all: the cells supply it, and adding
- * padding to .table-responsive as well is what produces the doubled gutter
- * down the left edge of a bordered table.
+ * The skip link is positioned by .bb-skip-link; this is only about revealing it.
+ * Bootstrap's .visually-hidden-focusable un-hides on focus, but the element also
+ * has to sit above the sticky topbar once it does.
  */
+.bb-skip-link:focus {
+  z-index: 1090;
+}

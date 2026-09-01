@@ -1,0 +1,148 @@
+/*
+ * bootstrap-vue-next is kept for behaviour we would otherwise have to rebuild:
+ * modal focus trapping and scroll locking, the offcanvas mobile nav, and the
+ * toast orchestrator. Those components render Bootstrap's markup, so Bootstrap
+ * keeps supplying their mechanics (show/hide, fade, backdrop stacking).
+ *
+ * This file restyles that markup to the prototype's design. It only touches
+ * appearance — nothing here changes what a component does.
+ */
+
+/* --- Modal ---------------------------------------------------------------- */
+
+.modal-backdrop {
+  --bs-backdrop-bg: rgba(2, 6, 23, 0.58);
+  --bs-backdrop-opacity: 1;
+  backdrop-filter: blur(8px);
+}
+
+.modal-dialog {
+  max-width: min(560px, 100%);
+  margin: 20px auto;
+}
+
+.modal-dialog.modal-lg,
+.modal-dialog.modal-xl {
+  max-width: min(760px, 100%);
+}
+
+.modal-content {
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--bb-border);
+  background: var(--bb-bg);
+  color: var(--bb-text);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.34);
+  animation: bb-modal-in 0.18s ease-out;
+}
+
+@keyframes bb-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.modal-content .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--bb-border);
+  border-radius: 0;
+}
+
+.modal-content .modal-body {
+  padding: 22px;
+  overflow: auto;
+  max-height: calc(100vh - 220px);
+}
+
+.modal-content .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--bb-border);
+  background: var(--bb-surface);
+  margin: 0;
+}
+
+/* The footer's own child margins would stack on top of the flex gap. */
+.modal-content .modal-footer > * {
+  margin: 0;
+}
+
+.bb-modal-title h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.bb-modal-title p {
+  margin: 4px 0 0;
+  color: var(--bb-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 680px) {
+  .modal-dialog {
+    margin: 10px auto;
+  }
+  .modal-content {
+    border-radius: 16px;
+  }
+}
+
+/* --- Offcanvas (mobile navigation) ---------------------------------------- */
+
+.offcanvas {
+  width: 260px;
+  background: var(--bb-bg);
+  color: var(--bb-text);
+  border-right: 1px solid var(--bb-border);
+}
+
+.offcanvas .offcanvas-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--bb-border);
+}
+
+.offcanvas .offcanvas-body {
+  padding: 18px;
+  /* SideNav is written for the sidebar column, where its footer is pushed down
+     by margin-top:auto. The offcanvas body has to be a flex column too or the
+     footer collapses against the nav. */
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* --- Toasts --------------------------------------------------------------- */
+
+.toast {
+  border-radius: 14px;
+  border: 1px solid var(--bb-border);
+  background: var(--bb-bg);
+  color: var(--bb-text);
+  box-shadow: var(--bb-shadow-sm);
+}
+
+.toast .toast-header {
+  border-radius: 14px 14px 0 0;
+  background: var(--bb-surface);
+  color: var(--bb-text);
+  border-bottom: 1px solid var(--bb-border);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.toast .toast-body {
+  font-size: 12px;
+  color: var(--bb-muted);
+}
