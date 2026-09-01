@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { BButton, BFormTextarea, BSpinner } from "bootstrap-vue-next";
 
 const props = defineProps<{ busy?: boolean }>();
 const emit = defineEmits<{ send: [content: string] }>();
@@ -22,20 +21,22 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <form class="d-flex gap-2 align-items-end" @submit.prevent="submit">
-    <BFormTextarea
+  <form class="bb-composer" @submit.prevent="submit">
+    <textarea
       v-model="text"
       rows="1"
-      max-rows="5"
-      placeholder="Ask this bot something…"
+      placeholder="Ask a test question..."
       aria-label="Message"
       :disabled="busy"
       @keydown="onKeydown"
     />
-    <BButton type="submit" variant="primary" :disabled="busy || !text.trim()">
-      <BSpinner v-if="busy" small />
-      <i v-else class="bi bi-send" />
-      <span class="visually-hidden">Send</span>
-    </BButton>
+    <button
+      type="submit"
+      class="bb-btn bb-btn-primary"
+      style="align-self: flex-end"
+      :disabled="busy || !text.trim()"
+    >
+      {{ busy ? "Sending…" : "Send ↑" }}
+    </button>
   </form>
 </template>

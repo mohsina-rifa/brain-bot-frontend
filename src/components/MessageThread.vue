@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { BButton, BSpinner } from "bootstrap-vue-next";
 import type { Message, QnaMatch } from "@/types/api";
 
-const props = defineProps<{
+defineProps<{
   messages: Message[];
   pending?: string | null;
   failed?: string | null;
@@ -14,51 +12,28 @@ const props = defineProps<{
 }>();
 
 defineEmits<{ retry: [] }>();
-
-const botBubble = computed(() =>
-  props.accent
-    ? {
-        borderLeft: `3px solid ${props.accent}`,
-        background: `color-mix(in srgb, ${props.accent} 10%, transparent)`,
-      }
-    : undefined,
-);
 </script>
 
 <template>
-  <div class="d-flex flex-column gap-3">
+  <div class="bb-thread">
     <div
       v-for="(message, i) in messages"
       :key="i"
-      class="d-flex"
-      :class="
-        message.role === 'user'
-          ? 'justify-content-end'
-          : 'justify-content-start'
-      "
+      class="bb-msg"
+      :class="message.role === 'user' ? 'user' : 'bot'"
     >
       <div
-        class="px-3 py-2 rounded-3 shadow-sm chat-bubble"
-        style="max-width: min(42rem, 85%); white-space: pre-wrap"
-        :class="
-          message.role === 'user'
-            ? 'chat-bubble-user'
-            : 'bg-body-tertiary border'
+        class="bb-msg-avatar"
+        :style="
+          message.role === 'bot' && accent
+            ? { background: `color-mix(in srgb, ${accent} 18%, transparent)`, color: accent }
+            : undefined
         "
-        :style="message.role === 'bot' ? botBubble : undefined"
       >
-        <div
-          class="small fw-semibold mb-1 d-flex align-items-center gap-2"
-          :class="message.role === 'user' && 'opacity-75'"
-        >
-          <span
-            v-if="message.role === 'bot' && accent"
-            class="rounded-circle flex-shrink-0"
-            style="width: 0.5rem; height: 0.5rem"
-            :style="{ background: accent }"
-          />
-          {{ message.role === "user" ? "You" : "Bot" }}
-        </div>
+        {{ message.role === "user" ? "YOU" : "BOT" }}
+      </div>
+
+      <div class="bb-bubble">
         {{ message.content }}
 
         <details
@@ -68,69 +43,103 @@ const botBubble = computed(() =>
             matches &&
             matches.length
           "
-          class="mt-2 pt-2 border-top small"
+          class="bb-matches"
         >
-          <summary class="text-body-secondary" style="cursor: pointer">
+          <summary>
             Matched {{ matches.length }}
             {{ matches.length === 1 ? "entry" : "entries" }}
           </summary>
-          <ul class="list-unstyled mb-0 mt-2 d-flex flex-column gap-1">
-            <li v-for="m in matches" :key="m.id" class="d-flex gap-2">
-              <span class="badge text-bg-secondary flex-shrink-0">
+          <ul>
+            <li v-for="m in matches" :key="m.id">
+              <span class="bb-badge neutral">
                 {{ (m.cosine_similarity * 100).toFixed(0) }}%
               </span>
-              <span class="text-body-secondary">{{ m.question }}</span>
+              <span>{{ m.question }}</span>
             </li>
           </ul>
         </details>
       </div>
     </div>
 
-    <div v-if="pending" class="d-flex justify-content-end">
-      <div
-        class="px-3 py-2 rounded-3 shadow-sm chat-bubble-user opacity-75"
-        style="max-width: min(42rem, 80%); white-space: pre-wrap"
-      >
-        <div class="small fw-semibold mb-1 opacity-75">You</div>
-        {{ pending }}
+    <div v-if="pending" class="bb-msg user" style="opacity: 0.7">
+      <div class="bb-msg-avatar">YOU</div>
+      <div class="bb-bubble">
+        {{ pending }}<small>Sending…</small>
       </div>
     </div>
 
-    <div v-if="failed" class="d-flex justify-content-end">
-      <div
-        class="px-3 py-2 rounded-3 border border-danger"
-        style="max-width: min(42rem, 80%); white-space: pre-wrap"
-      >
-        <div class="small fw-semibold mb-1 text-danger">Not sent</div>
+    <div v-if="failed" class="bb-msg user">
+      <div class="bb-msg-avatar">YOU</div>
+      <div class="bb-bubble bb-bubble-failed">
         {{ failed }}
-        <div class="mt-2">
-          <BButton size="sm" variant="outline-danger" @click="$emit('retry')">
-            Retry
-          </BButton>
-        </div>
+        <small>Not sent</small>
+        <button type="button" class="bb-btn bb-btn-danger" @click="$emit('retry')">
+          Retry
+        </button>
       </div>
     </div>
 
-    <div v-if="thinking" class="d-flex justify-content-start">
-      <div
-        class="px-3 py-2 rounded-3 bg-body-tertiary border d-flex align-items-center gap-2"
-      >
-        <BSpinner small />
-        <span class="small text-body-secondary">
-          {{
-            slow
-              ? "Still thinking — the reply is taking longer than usual."
-              : "Bot is thinking…"
-          }}
-        </span>
+    <div v-if="thinking" class="bb-msg bot">
+      <div class="bb-msg-avatar">BOT</div>
+      <div class="bb-bubble bb-thinking">
+        {{
+          slow
+            ? "Still thinking — the reply is taking longer than usual."
+            : "Bot is thinking…"
+        }}
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.chat-bubble-user {
-  background: color-mix(in srgb, var(--bs-emphasis-color) 88%, transparent);
-  color: var(--bs-body-bg);
+.bb-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bb-msg.user .bb-bubble.bb-bubble-failed {
+  border-color: var(--bb-danger);
+  background: var(--bb-danger-soft);
+  color: var(--bb-danger);
+}
+
+.bb-msg.user .bb-bubble.bb-bubble-failed .bb-btn {
+  margin-top: 10px;
+}
+
+.bb-msg.bot .bb-bubble.bb-thinking {
+  color: var(--bb-muted);
+  font-style: italic;
+}
+
+.bb-matches {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bb-border);
+  font-size: 11px;
+}
+
+.bb-matches summary {
+  cursor: pointer;
+  color: var(--bb-muted);
+  font-weight: 700;
+}
+
+.bb-matches ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bb-matches li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--bb-muted);
 }
 </style>
