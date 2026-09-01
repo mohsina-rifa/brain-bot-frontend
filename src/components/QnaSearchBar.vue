@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { BButton, BFormInput, BSpinner } from "bootstrap-vue-next";
 import { useDebouncedCallback } from "@/composables/useDebounce";
 
 const props = withDefaults(
@@ -22,7 +21,10 @@ watch(
   },
 );
 
-const debounced = useDebouncedCallback((term: string) => emit("search", term), 300);
+const debounced = useDebouncedCallback(
+  (term: string) => emit("search", term),
+  300,
+);
 
 function onInput(value: string) {
   text.value = value;
@@ -36,25 +38,20 @@ function clear() {
 </script>
 
 <template>
-  <div class="input-group" style="max-width: 28rem">
-    <span class="input-group-text bg-body">
-      <BSpinner v-if="searching" small />
-      <i v-else class="bi bi-search" />
-    </span>
-    <BFormInput
-      :model-value="text"
-      type="search"
-      placeholder="Search questions and answers"
-      aria-label="Search Q&amp;A content"
-      @update:model-value="(v: unknown) => onInput(String(v ?? ''))"
-    />
-    <BButton
-      v-if="text"
-      variant="outline-secondary"
-      aria-label="Clear search"
-      @click="clear"
-    >
+  <div class="bb-toolbar" style="width: 100%">
+    <div class="bb-input-wrap">
+      <span class="bb-search-icon">{{ searching ? "◌" : "⌕" }}</span>
+      <input
+        :value="text"
+        class="bb-input search"
+        type="search"
+        placeholder="Search questions or answers..."
+        aria-label="Search Q&amp;A content"
+        @input="onInput(($event.target as HTMLInputElement).value)"
+      />
+    </div>
+    <button v-if="text" type="button" class="bb-btn" @click="clear">
       Clear
-    </BButton>
+    </button>
   </div>
 </template>

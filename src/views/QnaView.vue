@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, toRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  BButton,
-  BAlert,
-  BSpinner,
-  BFormSelect,
-  useToast,
-} from "bootstrap-vue-next";
+import { useToast } from "bootstrap-vue-next";
 import { isSessionEnded } from "@/api/client";
 import { useQna } from "@/composables/useQna";
 import { useActiveBotStore } from "@/stores/activeBot";
@@ -218,38 +212,27 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="container-fluid py-4 px-4">
-    <div
-      class="d-flex flex-wrap gap-2 justify-content-between align-items-start mb-3"
-    >
+  <div>
+    <section class="bb-page-head">
       <div>
-        <h1 class="h4 mb-1">Q&amp;A content</h1>
-        <p class="text-body-secondary mb-0">
-          {{ activeBot.bot?.name ?? "Knowledge base" }} ·
-          <span v-if="loading && !hasLoaded">loading…</span>
-          <span v-else-if="error">unavailable</span>
-          <span v-else>{{ rangeLabel() }}</span>
-          <!-- Refetch: the table stays put and only this marker moves. -->
-          <BSpinner v-if="loading && hasLoaded" small class="ms-2" />
+        <h1>Q&amp;A content</h1>
+        <p>
+          Curate the supported knowledge used by
+          <strong>{{ activeBot.bot?.name ?? "this bot" }}</strong
+          >. Keep answers concise, accurate and easy to maintain.
         </p>
       </div>
-      <BButton variant="primary" @click="openCreate">
-        <i class="bi bi-plus-lg me-1" />Add entry
-      </BButton>
-    </div>
-
-    <div class="mb-3">
-      <QnaSearchBar
-        :initial="search"
-        :searching="loading && Boolean(search)"
-        @search="onSearch"
-      />
-    </div>
+      <div class="bb-page-actions">
+        <button type="button" class="bb-btn bb-btn-primary" @click="openCreate">
+          ＋ Add Q&amp;A
+        </button>
+      </div>
+    </section>
 
     <LoadingSkeleton
       v-if="loading && !hasLoaded"
       :rows="5"
-      :columns="3"
+      :columns="4"
       :slow="slow"
       :retrying="retrying"
       cancellable
@@ -263,85 +246,96 @@ async function confirmDelete() {
       @retry="retry"
     />
 
-    <EmptyState
-      v-else-if="!rows.length && search"
-      illustration="search"
-      :title="`No entries match “${search}”`"
-      action-label="Clear search"
-      action-variant="outline-secondary"
-      @action="onSearch('')"
-    >
-      This bot has {{ hasLoaded ? "other" : "" }} entries, just none containing
-      that text. Try a different word, or clear the search.
-    </EmptyState>
+    <section v-else class="bb-card">
+      <div class="bb-card-header">
+        <QnaSearchBar
+          :initial="search"
+          :searching="loading && Boolean(search)"
+          @search="onSearch"
+        />
+      </div>
 
-    <EmptyState
-      v-else-if="!rows.length"
-      illustration="qna"
-      title="No Q&A entries yet"
-      description="This bot has nothing to answer from. Add a question and answer to start building its knowledge base."
-      action-label="Add entry"
-      @action="openCreate"
-    />
-
-    <!-- Content -->
-    <div v-else>
-      <div
-        :class="{ 'opacity-50': loading }"
-        :aria-busy="loading"
-        style="transition: opacity 120ms ease"
+      <EmptyState
+        v-if="!rows.length && search"
+        flush
+        illustration="search"
+        :title="`No entries match “${search}”`"
+        action-label="Clear search"
+        action-variant="secondary"
+        @action="onSearch('')"
       >
-      <QnaTable
-        :rows="rows"
-        :highlight="search"
-        :pending-id="pendingId"
-        @edit="openEdit"
-        @remove="onRequestDelete"
+        This bot has other entries, just none containing that text. Try a
+        different word, or clear the search.
+      </EmptyState>
+
+      <EmptyState
+        v-else-if="!rows.length"
+        flush
+        illustration="qna"
+        title="No Q&A entries yet"
+        description="This bot has nothing to answer from. Add a question and answer to start building its knowledge base."
+        action-label="Add entry"
+        @action="openCreate"
       />
-      </div>
 
-      <div
-        class="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-3"
-      >
-        <div class="d-flex align-items-center gap-2">
-          <label
-            for="qna-page-size"
-            class="form-label mb-0 small text-body-secondary"
-          >
-            Rows per page
-          </label>
-          <BFormSelect
-            id="qna-page-size"
-            :model-value="limit"
-            size="sm"
-            style="width: auto"
-            :options="[10, 25, 50]"
-            @update:model-value="(v: unknown) => setLimit(Number(v))"
+      <template v-else>
+        <div
+          :style="{
+            opacity: loading ? 0.5 : 1,
+            transition: 'opacity 120ms ease',
+          }"
+          :aria-busy="loading"
+        >
+          <QnaTable
+            :rows="rows"
+            :highlight="search"
+            :pending-id="pendingId"
+            @edit="openEdit"
+            @remove="onRequestDelete"
           />
-          <small v-if="pageCount > 1" class="text-body-secondary ms-2">
-            Page {{ page }} of {{ pageCount }}
-          </small>
         </div>
-        <div v-if="pageCount > 1" class="d-flex gap-2">
-          <BButton
-            size="sm"
-            variant="outline-secondary"
-            :disabled="page <= 1"
-            @click="goTo(page - 1)"
-          >
-            Previous
-          </BButton>
-          <BButton
-            size="sm"
-            variant="outline-secondary"
-            :disabled="page >= pageCount"
-            @click="goTo(page + 1)"
-          >
-            Next
-          </BButton>
+
+        <div class="bb-pagination">
+          <span>Showing {{ rangeLabel() }} entries</span>
+
+          <div class="bb-pagination-controls">
+            <label for="qna-page-size">Rows</label>
+            <select
+              id="qna-page-size"
+              class="bb-select bb-page-size"
+              :value="limit"
+              @change="
+                setLimit(Number(($event.target as HTMLSelectElement).value))
+              "
+            >
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+            </select>
+
+            <div v-if="pageCount > 1" class="bb-pager">
+              <button
+                type="button"
+                :disabled="page <= 1"
+                aria-label="Previous page"
+                @click="goTo(page - 1)"
+              >
+                ‹
+              </button>
+              <button type="button" class="current" disabled>{{ page }}</button>
+              <button
+                type="button"
+                :disabled="page >= pageCount"
+                aria-label="Next page"
+                @click="goTo(page + 1)"
+              >
+                ›
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </section>
 
     <QnaFormDialog
       v-model="showForm"
@@ -358,33 +352,65 @@ async function confirmDelete() {
 
     <ConfirmDialog
       :model-value="pendingDelete !== null"
-      title="Delete entry"
-      confirm-label="Delete entry"
+      title="Delete item?"
+      subtitle="This action cannot be undone."
+      confirm-label="Delete"
       :busy="pendingId !== null"
       :slow="slowSave"
-      @update:model-value="(v: boolean) => { if (!v) pendingDelete = null }"
+      @update:model-value="
+        (v: boolean) => {
+          if (!v) pendingDelete = null;
+        }
+      "
       @confirm="confirmDelete"
     >
-      <BAlert
+      <div
         v-if="mutationError"
-        :model-value="true"
-        variant="danger"
-        class="mb-3 d-flex justify-content-between align-items-center gap-3"
+        class="bb-notice danger bb-confirm-error"
+        role="alert"
       >
         <span>{{ mutationError }}</span>
-        <BButton
-          variant="outline-danger"
-          size="sm"
-          class="flex-shrink-0"
+        <button
+          type="button"
+          class="bb-btn bb-btn-danger"
           :disabled="pendingId !== null"
           @click="onRetry"
         >
           Retry
-        </BButton>
-      </BAlert>
+        </button>
+      </div>
 
-      Delete <strong>{{ pendingDelete?.question }}</strong
-      >? The bot will no longer be able to answer from it. This cannot be undone.
+      <div class="bb-notice danger">
+        <strong>{{ pendingDelete?.question }}</strong> will be permanently
+        removed. The bot will no longer be able to answer from it.
+      </div>
     </ConfirmDialog>
   </div>
 </template>
+
+<style scoped>
+.bb-confirm-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.bb-confirm-error .bb-btn {
+  flex-shrink: 0;
+}
+
+.bb-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bb-page-size {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+</style>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { BButton, BSpinner } from "bootstrap-vue-next";
 import type { Qna } from "@/types/api";
 
 const props = defineProps<{
@@ -53,139 +52,137 @@ function formatDate(iso: string) {
 </script>
 
 <template>
-  <div class="table-responsive border rounded qna-scroll">
-    <table class="table table-hover align-middle mb-0 qna-table">
-      <thead class="table-light qna-sticky-head">
+  <div class="bb-table-wrap bb-qna-scroll">
+    <table class="bb-table">
+      <thead class="bb-sticky-head">
         <tr>
-          <th scope="col" style="width: 2.5rem">
-            <span class="visually-hidden">Expand</span>
-          </th>
-          <th scope="col" style="width: 32%">Question</th>
-          <th scope="col">Answer</th>
-          <th
-            scope="col"
-            class="text-nowrap d-none d-lg-table-cell"
-            style="width: 1%"
-          >
-            Updated
-          </th>
-          <th scope="col" class="text-end text-nowrap" style="width: 1%">
-            Actions
-          </th>
+          <th style="width: 29%">Question</th>
+          <th>Answer</th>
+          <th class="bb-nowrap">Updated</th>
+          <th style="width: 1%">Status</th>
+          <th style="width: 1%; text-align: right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <template v-for="row in rows" :key="row.id">
-          <tr :class="{ 'opacity-50': pendingId === row.id }">
-            <td>
-              <button
-                type="button"
-                class="btn btn-sm btn-link p-0 text-body-secondary"
-                :aria-expanded="expanded.has(row.id)"
-                :aria-label="
-                  expanded.has(row.id)
-                    ? `Collapse answer to ${row.question}`
-                    : `Expand answer to ${row.question}`
-                "
-                @click="toggle(row.id)"
-              >
-                <i
-                  class="bi"
-                  :class="
-                    expanded.has(row.id)
-                      ? 'bi-chevron-down'
-                      : 'bi-chevron-right'
-                  "
-                />
-              </button>
-            </td>
-            <td class="fw-semibold">
+        <tr
+          v-for="row in rows"
+          :key="row.id"
+          :style="{ opacity: pendingId === row.id ? 0.5 : 1 }"
+        >
+          <td>
+            <div class="bb-table-title">
               <template v-for="(seg, i) in segments(row.question)" :key="i"
-                ><mark v-if="seg.match" class="px-0">{{ seg.text }}</mark
+                ><mark v-if="seg.match">{{ seg.text }}</mark
                 ><template v-else>{{ seg.text }}</template></template
               >
-            </td>
-            <td
-              class="text-body-secondary"
-              :class="expanded.has(row.id) ? '' : 'text-truncate'"
-              style="max-width: 1px"
+            </div>
+            <button
+              type="button"
+              class="bb-table-sub bb-link"
+              :aria-expanded="expanded.has(row.id)"
+              :aria-label="
+                expanded.has(row.id)
+                  ? `Collapse answer to ${row.question}`
+                  : `Expand answer to ${row.question}`
+              "
+              @click="toggle(row.id)"
             >
-              <template v-if="!expanded.has(row.id)"
-                ><template v-for="(seg, i) in segments(row.answer)" :key="i"
-                  ><mark v-if="seg.match" class="px-0">{{ seg.text }}</mark
-                  ><template v-else>{{ seg.text }}</template></template
-                ></template
-              >
-            </td>
-            <td
-              class="text-nowrap small text-body-secondary d-none d-lg-table-cell"
-            >
-              {{ formatDate(row.updatedAt) }}
-            </td>
-            <td class="text-end text-nowrap">
-              <template v-if="pendingId === row.id">
-                <BSpinner small />
-                <span class="small text-body-secondary ms-2">Saving…</span>
-              </template>
-              <template v-else>
-                <BButton
-                  size="sm"
-                  variant="outline-secondary"
-                  :disabled="Boolean(pendingId)"
-                  @click="$emit('edit', row)"
-                >
-                  Edit
-                </BButton>
-                <BButton
-                  size="sm"
-                  variant="outline-danger"
-                  class="ms-2"
-                  :disabled="Boolean(pendingId)"
-                  @click="$emit('remove', row)"
-                >
-                  Delete
-                </BButton>
-              </template>
-            </td>
-          </tr>
+              {{ expanded.has(row.id) ? "Hide full answer" : "Show full answer" }}
+            </button>
+          </td>
 
-          <tr v-if="expanded.has(row.id)" class="table-light">
-            <td />
-            <td colspan="4" class="pt-0">
-              <p class="mb-0 text-body-secondary" style="white-space: pre-wrap">
-                <template v-for="(seg, i) in segments(row.answer)" :key="i"
-                  ><mark v-if="seg.match" class="px-0">{{ seg.text }}</mark
-                  ><template v-else>{{ seg.text }}</template></template
-                >
-              </p>
-            </td>
-          </tr>
-        </template>
+          <td>
+            <div :class="expanded.has(row.id) ? 'bb-qna-full' : 'bb-qna-answer'">
+              <template v-for="(seg, i) in segments(row.answer)" :key="i"
+                ><mark v-if="seg.match">{{ seg.text }}</mark
+                ><template v-else>{{ seg.text }}</template></template
+              >
+            </div>
+          </td>
+
+          <td class="bb-nowrap">{{ formatDate(row.updatedAt) }}</td>
+
+          <td>
+            <span
+              class="bb-badge"
+              :class="pendingId === row.id ? 'warning' : 'success'"
+            >
+              <span class="bb-dot"></span
+              >{{ pendingId === row.id ? "Saving" : "Ready" }}
+            </span>
+          </td>
+
+          <td>
+            <div class="bb-row-actions">
+              <button
+                type="button"
+                class="bb-icon-btn"
+                :disabled="Boolean(pendingId)"
+                :aria-label="`Edit ${row.question}`"
+                title="Edit entry"
+                @click="$emit('edit', row)"
+              >
+                ✎
+              </button>
+              <button
+                type="button"
+                class="bb-icon-btn"
+                :disabled="Boolean(pendingId)"
+                :aria-label="`Delete ${row.question}`"
+                title="Delete entry"
+                @click="$emit('remove', row)"
+              >
+                ⌫
+              </button>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
 </template>
 
 <style scoped>
-.qna-scroll {
-  max-height: calc(100vh - 18rem);
+.bb-qna-scroll {
+  max-height: calc(100vh - 22rem);
   overflow-y: auto;
 }
 
-@media (max-width: 991.98px) {
-  .qna-scroll {
-    max-height: calc(100vh - 22rem);
-  }
-
-  .qna-table {
-    min-width: 28rem;
-  }
-}
-
-.qna-sticky-head th {
+.bb-sticky-head th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: var(--bs-table-bg, var(--bs-tertiary-bg));
+}
+
+.bb-nowrap {
+  white-space: nowrap;
+}
+
+/* Expanded rows drop the single-line clamp and wrap in place, so the row grows
+   instead of pushing a second <tr> in underneath it. */
+.bb-qna-full {
+  color: var(--bb-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bb-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--bb-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bb-link:hover {
+  text-decoration: underline;
+}
+
+mark {
+  padding: 0;
+  background: color-mix(in srgb, var(--bb-warning) 30%, transparent);
+  color: inherit;
+  border-radius: 3px;
 }
 </style>

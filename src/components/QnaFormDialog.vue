@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import {
-  BModal,
-  BForm,
-  BFormGroup,
-  BFormTextarea,
-  BButton,
-  BAlert,
-  BSpinner,
-} from "bootstrap-vue-next";
+import { BModal } from "bootstrap-vue-next";
 import type { Qna } from "@/types/api";
 
 const show = defineModel<boolean>({ default: false });
@@ -109,134 +101,171 @@ watch(
 <template>
   <BModal
     v-model="show"
-    :title="isEdit ? 'Edit Q&A entry' : 'Add Q&A entry'"
     :no-close-on-backdrop="busy"
     size="lg"
     scrollable
     @hide="onHide"
   >
-    <BAlert
-      v-if="confirmingDiscard"
-      :model-value="true"
-      variant="warning"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
-    >
-      <span>You have unsaved changes. Close without saving?</span>
-      <span class="d-flex gap-2 flex-shrink-0">
-        <BButton variant="outline-secondary" size="sm" @click="confirmingDiscard = false">
-          Keep editing
-        </BButton>
-        <BButton variant="warning" size="sm" @click="discardAndClose">Discard</BButton>
-      </span>
-    </BAlert>
+    <template #header>
+      <div class="bb-modal-title">
+        <h3>{{ isEdit ? "Edit Q&A entry" : "Add Q&A entry" }}</h3>
+        <p>
+          This content will become part of the bot's managed knowledge.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="bb-icon-btn"
+        aria-label="Close"
+        :disabled="busy"
+        @click="requestClose"
+      >
+        ×
+      </button>
+    </template>
 
-    <BAlert
-      v-if="error"
-      :model-value="true"
-      variant="danger"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
-    >
+    <div v-if="confirmingDiscard" class="bb-notice warning bb-stack" role="alert">
+      <span>You have unsaved changes. Close without saving?</span>
+      <span class="bb-stack-actions">
+        <button type="button" class="bb-btn" @click="confirmingDiscard = false">
+          Keep editing
+        </button>
+        <button type="button" class="bb-btn bb-btn-danger" @click="discardAndClose">
+          Discard
+        </button>
+      </span>
+    </div>
+
+    <div v-if="error" class="bb-notice danger bb-stack" role="alert">
       <span>{{ error }}</span>
-      <BButton
+      <button
         data-retry
-        variant="outline-danger"
-        size="sm"
-        class="flex-shrink-0"
+        type="button"
+        class="bb-btn bb-btn-danger"
         :disabled="busy"
         @click="emit('retry')"
       >
         Retry
-      </BButton>
-    </BAlert>
+      </button>
+    </div>
 
-    <BAlert
-      v-if="duplicateQuestion"
-      :model-value="true"
-      variant="warning"
-      class="mb-3"
-    >
-      <div class="fw-semibold mb-1">This question already exists</div>
-      <div class="small mb-2">
+    <div v-if="duplicateQuestion" class="bb-notice warning" role="alert">
+      <div class="bb-notice-title">This question already exists</div>
+      <p class="bb-notice-body">
         “{{ duplicateQuestion }}” is already in this knowledge base. Two close
         matches make it harder for the bot to pick the right answer.
-      </div>
-      <div class="d-flex gap-2">
-        <BButton variant="warning" size="sm" :disabled="busy" @click="onSubmit">
+      </p>
+      <div class="bb-stack-actions">
+        <button
+          type="button"
+          class="bb-btn bb-btn-primary"
+          :disabled="busy"
+          @click="onSubmit"
+        >
           Save anyway
-        </BButton>
-        <BButton
-          variant="outline-secondary"
-          size="sm"
+        </button>
+        <button
+          type="button"
+          class="bb-btn"
           :disabled="busy"
           @click="emit('dismissDuplicate')"
         >
           Let me change it
-        </BButton>
+        </button>
       </div>
-    </BAlert>
+    </div>
 
-    <BAlert v-if="busy && slow" :model-value="true" variant="info" class="mb-3">
-      <div class="d-flex align-items-center gap-2">
-        <BSpinner small />
-        <span>
-          Still saving. The server embeds the answer before it replies, which can
-          take a few seconds — leave this open.
-        </span>
-      </div>
-    </BAlert>
+    <div v-if="busy && slow" class="bb-notice" role="status">
+      Still saving. The server embeds the answer before it replies, which can
+      take a few seconds — leave this open.
+    </div>
 
-    <BForm novalidate @submit.prevent="onSubmit">
-      <BFormGroup
-        label="Question"
-        label-for="qna-question"
-        class="mb-3"
-        :state="fieldErrors?.question ? false : null"
-        :invalid-feedback="fieldErrors?.question"
-      >
-        <BFormTextarea
+    <form novalidate @submit.prevent="onSubmit">
+      <div class="bb-form-group" style="margin-bottom: 16px">
+        <label class="bb-form-label" for="qna-question">Question</label>
+        <textarea
           id="qna-question"
           v-model="question"
-          rows="2"
-          max-rows="4"
+          class="bb-textarea"
+          style="min-height: 80px"
           required
-          placeholder="What are your support hours?"
+          placeholder="What should users ask?"
           :disabled="busy"
-          :state="fieldErrors?.question ? false : null"
+          :aria-invalid="Boolean(fieldErrors?.question)"
         />
-      </BFormGroup>
+        <div v-if="fieldErrors?.question" class="bb-field-error">
+          {{ fieldErrors.question }}
+        </div>
+      </div>
 
-      <BFormGroup
-        label="Answer"
-        label-for="qna-answer"
-        description="This is what the bot will reply with when the question matches."
-        :state="fieldErrors?.answer ? false : null"
-        :invalid-feedback="fieldErrors?.answer"
-      >
-        <BFormTextarea
+      <div class="bb-form-group">
+        <label class="bb-form-label" for="qna-answer">Answer</label>
+        <textarea
           id="qna-answer"
           v-model="answer"
-          rows="5"
-          max-rows="12"
+          class="bb-textarea"
+          style="min-height: 160px"
           required
-          placeholder="Our support team is available 9 AM to 6 PM, Sunday through Thursday."
+          placeholder="Write the supported answer..."
           :disabled="busy"
-          :state="fieldErrors?.answer ? false : null"
+          :aria-invalid="Boolean(fieldErrors?.answer)"
         />
-      </BFormGroup>
-    </BForm>
+        <div v-if="fieldErrors?.answer" class="bb-field-error">
+          {{ fieldErrors.answer }}
+        </div>
+        <div class="bb-form-help">
+          Saving may take a few seconds while the entry is processed.
+        </div>
+      </div>
+    </form>
 
     <template #footer>
-      <BButton variant="outline-secondary" :disabled="busy" @click="requestClose">
+      <button type="button" class="bb-btn" :disabled="busy" @click="requestClose">
         Cancel
-      </BButton>
-      <BButton
-        variant="primary"
+      </button>
+      <button
+        type="button"
+        class="bb-btn bb-btn-primary"
         :disabled="busy || !question || !answer"
         @click="onSubmit"
       >
-        <BSpinner v-if="busy" small class="me-2" />
         {{ busy ? "Saving…" : isEdit ? "Save changes" : "Add entry" }}
-      </BButton>
+      </button>
     </template>
   </BModal>
 </template>
+
+<style scoped>
+.bb-notice {
+  margin-bottom: 16px;
+}
+
+.bb-stack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.bb-stack-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bb-notice-title {
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.bb-notice-body {
+  margin: 0 0 10px;
+}
+
+.bb-field-error {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bb-danger);
+}
+</style>
