@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import {
-  BModal,
-  BForm,
-  BFormGroup,
-  BFormInput,
-  BFormSelect,
-  BButton,
-  BAlert,
-  BSpinner,
-} from "bootstrap-vue-next";
+import { BModal } from "bootstrap-vue-next";
 import client from "@/api/client";
 import { useApi } from "@/composables/useApi";
 import type { Bot } from "@/types/api";
@@ -59,102 +50,148 @@ async function onSubmit() {
 <template>
   <BModal
     v-model="show"
-    title="Create bot"
     :no-close-on-backdrop="create.loading.value"
     scrollable
   >
-    <BAlert
+    <template #header>
+      <div class="bb-modal-title">
+        <h3>Create new bot</h3>
+        <p>Set the basics now. Branding can be refined later.</p>
+      </div>
+      <button
+        type="button"
+        class="bb-icon-btn"
+        aria-label="Close"
+        :disabled="create.loading.value"
+        @click="show = false"
+      >
+        ×
+      </button>
+    </template>
+
+    <div
       v-if="create.error.value"
-      :model-value="true"
-      variant="danger"
-      class="mb-3 d-flex justify-content-between align-items-center gap-3"
+      class="bb-notice danger bb-dialog-error"
+      role="alert"
     >
       <span>{{ create.error.value }}</span>
-      <BButton
-        variant="outline-danger"
-        size="sm"
-        class="flex-shrink-0"
+      <button
+        type="button"
+        class="bb-btn bb-btn-danger"
         :disabled="create.loading.value"
         @click="onSubmit"
       >
         Retry
-      </BButton>
-    </BAlert>
+      </button>
+    </div>
 
-    <BAlert
+    <div
       v-if="create.loading.value && create.slow.value"
-      :model-value="true"
-      variant="info"
-      class="mb-3 d-flex align-items-center gap-2"
+      class="bb-notice"
+      style="margin-bottom: 16px"
+      role="status"
     >
-      <BSpinner small />
-      <span>Still creating — the server is taking longer than usual.</span>
-    </BAlert>
+      Still creating — the server is taking longer than usual.
+    </div>
 
-    <BForm novalidate @submit.prevent="onSubmit">
-      <BFormGroup label="Name" label-for="bot-name" class="mb-3">
-        <BFormInput
-          id="bot-name"
-          v-model="name"
-          required
-          maxlength="60"
-          placeholder="Customer Support Bot"
-          :disabled="create.loading.value"
-        />
-      </BFormGroup>
-
-      <BFormGroup label="Description" label-for="bot-description" class="mb-3">
-        <BFormInput
-          id="bot-description"
-          v-model="description"
-          required
-          maxlength="200"
-          placeholder="What this bot helps with"
-          :disabled="create.loading.value"
-        />
-      </BFormGroup>
-
-      <div class="row g-3">
-        <div class="col-6">
-          <BFormGroup label="Colour" label-for="bot-color">
-            <BFormInput
-              id="bot-color"
-              v-model="color"
-              type="color"
-              class="form-control-color"
-              :disabled="create.loading.value"
-            />
-          </BFormGroup>
+    <form novalidate @submit.prevent="onSubmit">
+      <div class="bb-form-grid">
+        <div class="bb-form-group bb-span-2">
+          <label class="bb-form-label" for="bot-name">Bot name</label>
+          <input
+            id="bot-name"
+            v-model="name"
+            class="bb-input"
+            required
+            maxlength="60"
+            placeholder="e.g. Support Assistant"
+            :disabled="create.loading.value"
+          />
         </div>
-        <div class="col-6">
-          <BFormGroup label="Status" label-for="bot-status">
-            <BFormSelect
-              id="bot-status"
-              v-model="status"
-              :options="['active', 'inactive']"
+
+        <div class="bb-form-group">
+          <label class="bb-form-label" for="bot-color">Brand colour</label>
+          <div class="bb-color-row">
+            <span class="bb-color-swatch">
+              <input
+                id="bot-color"
+                v-model="color"
+                type="color"
+                :disabled="create.loading.value"
+                aria-label="Choose brand colour"
+              />
+            </span>
+            <input
+              v-model="color"
+              class="bb-input"
               :disabled="create.loading.value"
+              aria-label="Brand colour hex value"
             />
-          </BFormGroup>
+          </div>
+        </div>
+
+        <div class="bb-form-group">
+          <label class="bb-form-label" for="bot-status">Status</label>
+          <select
+            id="bot-status"
+            v-model="status"
+            class="bb-select"
+            :disabled="create.loading.value"
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <div class="bb-form-group bb-span-2">
+          <label class="bb-form-label" for="bot-description">Description</label>
+          <textarea
+            id="bot-description"
+            v-model="description"
+            class="bb-textarea"
+            required
+            maxlength="200"
+            placeholder="What is this bot for?"
+            :disabled="create.loading.value"
+          />
+          <div class="bb-form-help">
+            Keep this short and useful for operators.
+          </div>
         </div>
       </div>
-    </BForm>
+    </form>
 
     <template #footer>
-      <BButton
-        variant="outline-secondary"
+      <button
+        type="button"
+        class="bb-btn"
         :disabled="create.loading.value"
         @click="show = false"
       >
         Cancel
-      </BButton>
-      <BButton
-        variant="primary"
+      </button>
+      <button
+        type="button"
+        class="bb-btn bb-btn-primary"
         :disabled="create.loading.value || !name.trim() || !description.trim()"
         @click="onSubmit"
       >
-        <BSpinner v-if="create.loading.value" small class="me-2" />
         {{ create.loading.value ? "Creating…" : "Create bot" }}
-      </BButton>
+      </button>
     </template>
   </BModal>
 </template>
+
+<style scoped>
+.bb-dialog-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.bb-dialog-error .bb-btn {
+  flex-shrink: 0;
+}
+</style>
