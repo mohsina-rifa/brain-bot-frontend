@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useBots } from "@/composables/useBots";
 import { useDebouncedCallback } from "@/composables/useDebounce";
@@ -38,6 +38,16 @@ const activeBot = useActiveBotStore();
 const metrics = useWorkspaceMetrics();
 const { counts, load: loadCounts } = useBotCounts();
 
+const activeBadge = computed(() => {
+  const active = metrics.activeBots.value;
+  const total = metrics.totalBots.value;
+  if (active === null || total === null) return null;
+  if (total === 0) return null;
+  if (active === 0) return { tone: "neutral", label: "None active" };
+  if (active === total) return { tone: "success", label: "Healthy" };
+  return { tone: "warning", label: `${total - active} inactive` };
+});
+
 const showCreate = ref(false);
 const pendingDelete = ref<Bot | null>(null);
 
@@ -51,8 +61,6 @@ const { invoke: applySearch } = useDebouncedCallback((value: string) => {
 
 watch(term, (value) => applySearch(value));
 
-// The per-card counts follow whichever bots are on screen, so they refresh
-// after a page change, a search, a create or a delete.
 watch(bots, (rows) => {
   if (rows.length) void loadCounts(rows.map((bot) => bot._id));
 });
@@ -138,7 +146,9 @@ async function confirmDelete() {
       <div class="bb-card bb-metric">
         <div class="bb-metric-top">
           <span class="bb-metric-label">Active</span>
-          <span class="bb-badge success"><span class="bb-dot"></span>Healthy</span>
+          <span v-if="activeBadge" class="bb-badge" :class="activeBadge.tone">
+            <span class="bb-dot"></span>{{ activeBadge.label }}
+          </span>
         </div>
         <div class="bb-metric-value">{{ metrics.activeBots.value ?? "—" }}</div>
         <div class="bb-metric-note">Ready to answer users</div>
@@ -218,7 +228,10 @@ async function confirmDelete() {
     <template v-else>
       <section
         class="bb-bot-grid"
-        :style="{ opacity: loading ? 0.5 : 1, transition: 'opacity 120ms ease' }"
+        :style="{
+          opacity: loading ? 0.5 : 1,
+          transition: 'opacity 120ms ease',
+        }"
         :aria-busy="loading"
       >
         <article
@@ -278,7 +291,9 @@ async function confirmDelete() {
             </button>
           </div>
 
-          <div class="bb-metric-note">Created {{ formatDate(bot.createdAt) }}</div>
+          <div class="bb-metric-note">
+            Created {{ formatDate(bot.createdAt) }}
+          </div>
         </article>
       </section>
 
